@@ -6,44 +6,27 @@ const loader = {
     
     // -- Propiedades del Cargador --
     
-    // 'loaded': true si todos los recursos están cargados.
-    loaded: true, 
-    
-    // 'loadedCount': Cuántos recursos se han cargado hasta ahora.
-    loadedCount: 0,
-    
-    // 'totalCount': El número total de recursos que NECESITAMOS cargar.
-    totalCount: 0,
-
-    // 'soundFileExtn': Qué formato de audio usará el navegador (lo detectaremos).
-    soundFileExtn: undefined,
-
-    // 'onload': Una función "callback" que se ejecutará cuando TODO esté cargado.
-    // La dejaremos vacía por ahora, 'game.js' le dirá qué hacer.
-    onload: null,
+    loaded: true, // true si todos los recursos están cargados.
+    loadedCount: 0, // Cuántos recursos se han cargado hasta ahora.
+    totalCount: 0, // El número total de recursos que NECESITAMOS cargar.
+    soundFileExtn: undefined, // Qué formato de audio usará el navegador.
+    onload: null, // Función "callback" que se ejecutará cuando TODO esté cargado.
 
     // -- Métodos (Funciones) del Cargador --
 
     /*
       init(): Detecta qué formato de audio (MP3 u OGG) prefiere el navegador.
-      Esto es importante porque no todos los navegadores soportan los mismos formatos[cite: 579, 580].
     */
     init: function() {
-        // Creamos un elemento de audio temporal solo para preguntar al navegador.
         const audio = new Audio();
-        
-        // Verificamos si puede reproducir MP3
         let mp3Support = audio.canPlayType("audio/mpeg");
-        // Verificamos si puede reproducir OGG
         let oggSupport = audio.canPlayType("audio/ogg; codecs=\"vorbis\"");
 
-        // Damos prioridad a OGG si es soportado, si no, usamos MP3.
         if (oggSupport) {
             this.soundFileExtn = ".ogg";
         } else if (mp3Support) {
             this.soundFileExtn = ".mp3";
         } else {
-            // Si no soporta ninguno, no podremos cargar sonidos.
             this.soundFileExtn = undefined;
         }
     },
@@ -58,11 +41,10 @@ const loader = {
         // Mostramos la pantalla de carga que hicimos en el Paso 1.
         game.showScreen("loadingscreen");
 
-        // Creamos un objeto de Imagen en la memoria del navegador.
         const image = new Image();
         
         // Le decimos al navegador: "Cuando esta imagen termine de cargarse ('load'),
-        // llama a la función 'itemLoaded'". [cite: 89, 617, 819]
+        // llama a la función 'itemLoaded'".
         image.addEventListener("load", loader.itemLoaded, false);
         
         // Ahora sí, le decimos a la imagen que comience a descargarse.
@@ -79,12 +61,9 @@ const loader = {
         this.loaded = false;
         game.showScreen("loadingscreen");
 
-        // Creamos un objeto de Audio.
         const audio = new Audio();
 
-        // Para los sonidos, no usamos el evento 'load', usamos 'canplaythrough'.
-        // Este evento se dispara cuando el navegador cree que puede reproducir
-        // el sonido completo sin pausas. [cite: 604, 824]
+        // Para los sonidos, usamos 'canplaythrough'.
         audio.addEventListener("canplaythrough", loader.itemLoaded, false);
 
         // Le decimos que comience a descargarse (añadiendo la extensión correcta).
@@ -94,8 +73,7 @@ const loader = {
     },
 
     /*
-      itemLoaded(ev): ¡Esta es la función MÁGICA!
-      Se llama CADA VEZ que UN recurso (imagen o sonido) termina de cargarse.
+      itemLoaded(ev): Se llama CADA VEZ que UN recurso termina de cargarse.
     */
     itemLoaded: function(ev) {
         // Sumamos 1 a nuestro contador de cosas cargadas.
@@ -114,16 +92,20 @@ const loader = {
 
         // Comparamos: ¿Ya cargamos todo lo que pedimos?
         if (loader.loadedCount === loader.totalCount) {
+            // ¡SÍ! Todo está cargado.
+            
+            // Reseteamos los contadores para la próxima vez (ej. otro nivel).
             loader.loaded = true;
             loader.loadedCount = 0;
             loader.totalCount = 0;
 
-            // CORRECCIÓN: llamar a la función existente para ocultar pantallas
-            game.hideScreens();
+            // Ocultamos la pantalla de carga.
+            game.hideScreens(); // (Tu corrección)
 
+            // Y ahora, llamamos a la función 'onload' que 'game.js' nos pasó.
             if (loader.onload) {
                 loader.onload();
-                loader.onload = null;
+                loader.onload = null; // La limpiamos para que no se llame de nuevo.
             }
         }
     }
