@@ -16,6 +16,14 @@ const levels = {
             entities: [
                 // (Recuerda: El origen (0,0) es la esquina SUPERIOR izquierda)
                 
+                // Paredes invisibles (límites del mundo)
+                // Pared IZQUIERDA
+                { nombre: "wall", x: -10, y: 240, width: 20, height: 480 },
+                // Pared DERECHA
+                { nombre: "wall", x: 650, y: 240, width: 20, height: 480 },
+                // Pared SUPERIOR
+                { nombre: "wall", x: 320, y: -10, width: 640, height: 20 },
+                
                 // El Suelo
                 // (Lo centramos en 640/2 = 320. Y lo ponemos abajo en 470)
                 { nombre: "ground", x: 320, y: 470 }, 

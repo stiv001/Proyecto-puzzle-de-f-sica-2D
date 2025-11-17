@@ -40,6 +40,14 @@ const entities = {
             width: 1000,
             height: 20,
             imageName: "ground.png" // (Aún no existe)
+        },
+        
+        // ✅ NUEVA: Definición para paredes invisibles
+        "wall": {
+            type: "static",
+            width: 20,  // Grosor por defecto (se sobreescribe en levels.js)
+            height: 480, // Altura por defecto
+            imageName: null // No tiene imagen (invisible)
         }
     },
 
