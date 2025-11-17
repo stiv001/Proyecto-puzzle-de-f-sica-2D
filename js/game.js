@@ -585,30 +585,47 @@ const game = {
             return;
         }
 
-        if (ent.type === "hero") {
-            ctx.fillStyle = "#2196F3";
-        } else if (ent.type === "villain") {
-            ctx.fillStyle = "#f44336";
-        } else if (ent.type === "block") {
-            ctx.fillStyle = "#8B4513";
-        } else if (ent.type === "static") {
-            ctx.fillStyle = "#4CAF50";
-        }
+        // ✅ NUEVO: Intentar dibujar imagen primero
+        const imageName = ent.imageName;
+        const image = imageName ? loader.images[imageName] : null;
 
-        if (ent.radius) {
-            ctx.beginPath();
-            ctx.arc(0, 0, ent.radius, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.strokeStyle = "rgba(255,255,255,0.3)";
-            ctx.lineWidth = 2;
-            ctx.stroke();
-        } else if (ent.width && ent.height) {
-            const hw = ent.width / 2;
-            const hh = ent.height / 2;
-            ctx.fillRect(-hw, -hh, ent.width, ent.height);
-            ctx.strokeStyle = "rgba(255,255,255,0.3)";
-            ctx.lineWidth = 2;
-            ctx.strokeRect(-hw, -hh, ent.width, ent.height);
+        if (image && image.complete) {
+            // Dibujar imagen (sprite)
+            if (ent.radius) {
+                // Para círculos: centrar la imagen
+                const size = ent.radius * 2;
+                ctx.drawImage(image, -ent.radius, -ent.radius, size, size);
+            } else if (ent.width && ent.height) {
+                // Para rectángulos: centrar la imagen
+                ctx.drawImage(image, -ent.width/2, -ent.height/2, ent.width, ent.height);
+            }
+        } else {
+            // ✅ FALLBACK: Dibujar formas de colores si no hay imagen
+            if (ent.type === "hero") {
+                ctx.fillStyle = "#2196F3";
+            } else if (ent.type === "villain") {
+                ctx.fillStyle = "#f44336";
+            } else if (ent.type === "block") {
+                ctx.fillStyle = "#8B4513";
+            } else if (ent.type === "static") {
+                ctx.fillStyle = "#4CAF50";
+            }
+
+            if (ent.radius) {
+                ctx.beginPath();
+                ctx.arc(0, 0, ent.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = "rgba(255,255,255,0.3)";
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            } else if (ent.width && ent.height) {
+                const hw = ent.width / 2;
+                const hh = ent.height / 2;
+                ctx.fillRect(-hw, -hh, ent.width, ent.height);
+                ctx.strokeStyle = "rgba(255,255,255,0.3)";
+                ctx.lineWidth = 2;
+                ctx.strokeRect(-hw, -hh, ent.width, ent.height);
+            }
         }
 
         ctx.restore();

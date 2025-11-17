@@ -10,6 +10,7 @@ const loader = {
     totalCount: 0, // El número total de recursos que NECESITAMOS cargar.
     soundFileExtn: undefined, // Qué formato de audio usará el navegador.
     onload: null, // Función "callback" que se ejecutará cuando TODO esté cargado.
+    images: {}, // ✅ NUEVO: Almacenar imágenes cargadas
 
     // -- Métodos (Funciones) del Cargador --
 
@@ -27,8 +28,18 @@ const loader = {
         this.updateMessage();
 
         const img = new Image();
-        img.addEventListener("load", loader.itemLoaded, false);
-        img.addEventListener("error", loader.itemLoaded, false);
+        const name = url.split('/').pop(); // ✅ Extraer nombre (ej: "hero.png")
+        
+        img.addEventListener("load", function() {
+            loader.images[name] = img; // ✅ Guardar imagen
+            loader.itemLoaded();
+        }, false);
+        
+        img.addEventListener("error", function() {
+            console.warn("❌ No se pudo cargar:", url);
+            loader.itemLoaded();
+        }, false);
+        
         img.src = url;
         return img;
     },
@@ -44,8 +55,16 @@ const loader = {
         if (!/\.(ogg|mp3)$/i.test(url) && this.soundFileExtn) {
             src = url + this.soundFileExtn;
         }
-        audio.addEventListener("canplaythrough", loader.itemLoaded, false);
-        audio.addEventListener("error", loader.itemLoaded, false);
+        
+        audio.addEventListener("canplaythrough", function() {
+            loader.itemLoaded();
+        }, false);
+        
+        audio.addEventListener("error", function() {
+            console.warn("❌ No se pudo cargar:", src);
+            loader.itemLoaded();
+        }, false);
+        
         audio.src = src;
         if (audio.load) audio.load();
         return audio;
@@ -54,7 +73,7 @@ const loader = {
     /*
       itemLoaded(ev): Se llama CADA VEZ que UN recurso termina (con éxito O error).
     */
-    itemLoaded: function(ev) {
+    itemLoaded: function() {
         // Sumamos 1 a nuestro contador de cosas cargadas.
         loader.loadedCount++;
         loader.updateMessage();
