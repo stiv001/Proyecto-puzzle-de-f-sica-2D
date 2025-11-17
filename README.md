@@ -1,1 +1,1 @@
-# Proyecto-puzzle-de-f-sica-2D
+# Proyecto-puzzle-de-fisica-2D
