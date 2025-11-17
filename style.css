@@ -1,4 +1,4 @@
-/* Estilo básico para que el juego ocupe toda la pantalla sin márgenes */
+/* Reset básico */
 body {
     margin: 0;
     padding: 0;
@@ -6,11 +6,7 @@ body {
     font-family: 'Arial', sans-serif;
 }
 
-/* El contenedor principal del juego.
-  Lo centramos en la pantalla y le damos un tamaño fijo.
-  'position: relative' es VITAL. Actúa como el "ancla" 
-  para todas las capas 'gamelayer' que están dentro de él.
-*/
+/* Contenedor principal del juego */
 #gamecontainer {
     width: 640px;
     height: 480px;
@@ -21,26 +17,14 @@ body {
     box-shadow: 0 0 20px rgba(33, 150, 243, 0.5);
 }
 
-/* ¡LA REGLA MÁS IMPORTANTE!
-  Esto controla todas nuestras "pantallas" (menú, juego, carga).
-*/
+/* Estilo base para todas las pantallas */
 .gamelayer {
-    /* 'position: absolute' hace que todas las capas se apilen
-      una encima de la otra en la misma posición (0,0)
-      dentro de su 'gamecontainer'.
-    */
     position: absolute;
     width: 640px;
     height: 480px;
     top: 0;
     left: 0;
-
-    /* Por defecto, TODAS las capas están ocultas.
-      Usaremos JavaScript para mostrar solo la que queremos.
-    */
     display: none;
-
-    /* Centramos el texto de las capas (como el menú) */
     text-align: center;
 }
 
@@ -84,6 +68,7 @@ body {
     color: #ccc;
 }
 
+/* Botones principales */
 #playbutton, #nextlevelbutton, #restartbutton {
     background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
     color: white;
@@ -108,7 +93,7 @@ body {
     margin-top: 20px;
 }
 
-/* Canvas */
+/* Área del canvas */
 #gamecanvas {
     z-index: 10;
 }
@@ -117,7 +102,7 @@ body {
     background: #0f0f1e;
 }
 
-/* HUD */
+/* Interfaz de usuario durante juego */
 #scorescreen {
     z-index: 15;
     pointer-events: none;
@@ -155,7 +140,7 @@ body {
     font-weight: bold;
 }
 
-/* Botón de silenciar */
+/* Control de audio */
 #mutebutton {
     position: absolute;
     top: 10px;
@@ -175,7 +160,7 @@ body {
     background: rgba(33, 150, 243, 0.3);
 }
 
-/* Pantallas de victoria y derrota */
+/* Pantallas de fin de juego */
 #winscreen, #losescreen {
     background: rgba(0, 0, 0, 0.95);
     z-index: 50;

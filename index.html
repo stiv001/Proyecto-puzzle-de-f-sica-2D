@@ -2,6 +2,7 @@
 <html>
 
 <head>
+    <!-- Configuración básica -->
     <meta charset="UTF-8">
     <title>Puzzle de Física 2D - Proyecto Bimestre 1</title>
     <meta name="viewport"
@@ -12,12 +13,12 @@
 <body>
     <div id="gamecontainer">
 
-        <!-- Pantalla de carga -->
+        <!-- Pantalla de carga inicial -->
         <div id="loadingscreen" class="gamelayer">
             <div id="loadingmessage">Cargando...</div>
         </div>
 
-        <!-- Menú principal -->
+        <!-- Menú principal del juego -->
         <div id="gamestartscreen" class="gamelayer">
             <h1>Puzzle de Física 2D</h1>
             <p>Destruye todos los enemigos y bloques</p>
@@ -27,31 +28,31 @@
             </div>
         </div>
 
-        <!-- Canvas del juego -->
+        <!-- Área de juego principal -->
         <div id="gamecanvas" class="gamelayer">
             <canvas id="maincanvas" width="640" height="480"></canvas>
         </div>
 
-        <!-- HUD (marcador) -->
+        <!-- Interfaz de usuario durante el juego -->
         <div id="scorescreen" class="gamelayer">
             <div class="score-container">
                 <div>Puntuación: <span id="score">0</span></div>
                 <div>Nivel: <span id="level">1</span></div>
                 <div>Héroes: <span id="heroes">3</span></div>
-                <div>Enemigos: <span id="enemies">0</span></div> <!-- ✅ NUEVO -->
+                <div>Enemigos: <span id="enemies">0</span></div>
             </div>
-            <!-- ✅ NUEVO: Botón de silenciar -->
+            <!-- Control de audio -->
             <button id="mutebutton" class="control-button">🔊 Sonido</button>
         </div>
 
-        <!-- ✅ NUEVO: Pantalla de Victoria -->
+        <!-- Pantalla de victoria -->
         <div id="winscreen" class="gamelayer">
             <h1>¡Nivel <span id="winlevel">1</span> Completado! 🎉</h1>
             <p>Puntuación: <span id="winscore">0</span></p>
             <button id="nextlevelbutton">Siguiente Nivel</button>
         </div>
 
-        <!-- ✅ NUEVO: Pantalla de Derrota -->
+        <!-- Pantalla de game over -->
         <div id="losescreen" class="gamelayer">
             <h1>Game Over 💀</h1>
             <p>Puntuación Final: <span id="losescore">0</span></p>
@@ -61,6 +62,7 @@
 
     </div>
 
+    <!-- Carga de librerías y scripts -->
     <script src="lib/Box2d.min.js"></script>
     <script src="js/physics.js"></script>
     <script src="js/loader.js"></script>

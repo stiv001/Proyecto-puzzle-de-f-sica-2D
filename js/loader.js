@@ -1,20 +1,15 @@
-/*
-  Objeto 'loader' (Cargador).
-  Este objeto se encargará de cargar todas nuestras imágenes y sonidos.
-*/
+/* Cargador de recursos */
 const loader = {
-    // -- Propiedades del Cargador --
-    
-    loaded: true, // true si todos los recursos están cargados.
-    loadedCount: 0, // Cuántos recursos se han cargado hasta ahora.
-    totalCount: 0, // El número total de recursos que NECESITAMOS cargar.
-    soundFileExtn: undefined, // Qué formato de audio usará el navegador.
-    onload: null, // Función "callback" que se ejecutará cuando TODO esté cargado.
-    images: {}, // ✅ NUEVO: Almacenar imágenes cargadas
-    sounds: {}, // ✅ NUEVO: Almacenar sonidos cargados
+    // Estado de carga
+    loaded: true,
+    loadedCount: 0,
+    totalCount: 0,
+    soundFileExtn: undefined,
+    onload: null,
+    images: {}, // Almacén de imágenes
+    sounds: {}, // Almacén de sonidos
 
-    // -- Métodos (Funciones) del Cargador --
-
+    // Detectar formato de audio compatible
     init: function() {
         const audio = new Audio();
         const mp3 = audio.canPlayType("audio/mpeg");
@@ -23,16 +18,17 @@ const loader = {
         console.log("🔊 Formato de audio detectado:", this.soundFileExtn || "NINGUNO");
     },
 
+    // Cargar imagen
     loadImage: function(url) {
         this.totalCount++;
         this.loaded = false;
         this.updateMessage();
 
         const img = new Image();
-        const name = url.split('/').pop(); // ✅ Extraer nombre (ej: "hero.png")
+        const name = url.split('/').pop();
         
         img.addEventListener("load", function() {
-            loader.images[name] = img; // ✅ Guardar imagen
+            loader.images[name] = img; // Guardar en almacén
             console.log("✅ Imagen cargada:", name);
             loader.itemLoaded();
         }, false);
@@ -46,22 +42,23 @@ const loader = {
         return img;
     },
 
+    // Cargar sonido
     loadSound: function(url) {
         this.totalCount++;
         this.loaded = false;
         this.updateMessage();
 
         const audio = new Audio();
-        const name = url.split('/').pop().split('.')[0]; // ✅ Extraer nombre sin extensión
+        const name = url.split('/').pop().split('.')[0];
         let src = url;
         
-        // Si la URL NO tiene extensión, agregar la detectada
+        // Ajustar extensión según navegador
         if (!/\.(ogg|mp3)$/i.test(url) && this.soundFileExtn) {
             src = url + this.soundFileExtn;
         }
         
         audio.addEventListener("canplaythrough", function() {
-            loader.sounds[name] = audio; // ✅ Guardar sonido
+            loader.sounds[name] = audio; // Guardar en almacén
             console.log("✅ Sonido cargado:", name, "→", src);
             loader.itemLoaded();
         }, false);
@@ -76,14 +73,12 @@ const loader = {
         return audio;
     },
 
-    /*
-      itemLoaded(ev): Se llama CADA VEZ que UN recurso termina (con éxito O error).
-    */
+    // Manejar recurso cargado
     itemLoaded: function() {
-        // Sumamos 1 a nuestro contador de cosas cargadas.
         loader.loadedCount++;
         loader.updateMessage();
 
+        // Limpiar event listeners
         try {
             if (ev && ev.target) {
                 const tag = (ev.target.tagName || "").toUpperCase();
@@ -97,10 +92,8 @@ const loader = {
             }
         } catch (e) {}
 
-        // Comparamos: ¿Ya cargamos (o fallamos) todo lo que pedimos?
+        // Verificar si terminó la carga
         if (loader.loadedCount === loader.totalCount) {
-            // ¡SÍ! Todo está "procesado".
-            
             loader.loaded = true;
             
             console.log("🎉 CARGA COMPLETA");
@@ -110,10 +103,8 @@ const loader = {
             loader.loadedCount = 0;
             loader.totalCount = 0;
 
-            // Ocultamos la pantalla de carga.
+            // Finalizar proceso
             try { game.hideScreens(); } catch (e) {}
-            // Y ahora, llamamos a la función 'onload' que 'game.js' nos pasó.
-            // (Esta función es la que inicia el game loop).
             if (loader.onload) {
                 const fn = loader.onload;
                 loader.onload = null;
@@ -122,6 +113,7 @@ const loader = {
         }
     },
 
+    // Actualizar mensaje de progreso
     updateMessage: function() {
         const msg = document.getElementById("loadingmessage");
         if (msg) {

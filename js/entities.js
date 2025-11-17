@@ -1,70 +1,68 @@
-/*
-  Objeto 'entities' (Entidades).
-  Este es nuestro catálogo central para definir las propiedades
-  de todos los objetos que pueden interactuar en el juego.
-*/
+/* Catálogo central de entidades */
 const entities = {
-    
-    // Lista de todas las definiciones de entidades
+
+    // Definiciones base de todas las entidades
     definitions: {
-        
-        // --- Héroes ---
+
+        // Héroe del juego
         "heroBird": {
-            type: "hero", // Tipo para lógica
-            radius: 15, // Radio en píxeles para la física
-            health: 500, // ✅ CAMBIAR
-            imageName: "hero.png" // (Aún no existe, lo cargaremos luego)
+            type: "hero",
+            radius: 15,
+            health: 500,
+            imageName: "hero.png"
         },
 
-        // --- Villanos ---
+        // Enemigo principal
         "enemyPig": {
             type: "villain",
             radius: 20,
-            health: 40, // ✅ CAMBIAR
-            points: 100, // Puntos que da al ser destruido
-            imageName: "enemy.png" // (Aún no existe)
+            health: 40,
+            points: 100,
+            imageName: "enemy.png"
         },
 
-        // --- Bloques/Obstáculos ---
+        // Bloques destructibles
         "woodBlock": {
             type: "block",
-            width: 40, // Ancho y alto para la física
+            width: 40,
             height: 20,
-            health: 20, // ✅ CAMBIAR
-            points: 50, // ✅ NUEVO: Puntos por destruir bloques
-            imageName: "wood.png" // (Aún no existe)
+            health: 20,
+            points: 50,
+            imageName: "wood.png"
         },
-        
-        // --- Suelo/Paredes ---
+
+        // Suelo del escenario
         "ground": {
-            type: "static", // Estático significa que no se mueve (como el suelo)
+            type: "static",
             width: 1000,
             height: 20,
-            imageName: "ground.png" // (Aún no existe)
+            imageName: "ground.png"
         },
-        
-        // ✅ NUEVA: Definición para paredes invisibles
+
+        // Paredes invisibles
         "wall": {
             type: "static",
-            width: 20,  // Grosor por defecto (se sobreescribe en levels.js)
-            height: 480, // Altura por defecto
-            imageName: null // No tiene imagen (invisible)
+            width: 20,
+            height: 480,
+            imageName: null
         }
     },
 
-    /*
-      Función 'create(entidadInfo)'
-      ACTUALIZADA para llamar al motor de física.
-    */
+    /* Crea una entidad a partir de su definición */
     create: function(entInfo) {
         const def = this.definitions[entInfo.nombre];
         if (!def) {
             console.warn("Definición no encontrada:", entInfo.nombre);
             return null;
         }
+
+        // Mezcla datos base con datos específicos
         const ent = Object.assign({}, def, entInfo);
+
+        // Posición inicial
         ent.x = entInfo.x || 0;
         ent.y = entInfo.y || 0;
+
         console.log("entities.create ->", ent.nombre, "type:", ent.type, "pos:", ent.x, ent.y);
         return ent;
     }

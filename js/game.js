@@ -23,14 +23,17 @@ const game = {
     heroesRemaining: 3,
     highScore: 0,
 
+    // Inicialización del juego
     init: function() {
         const canvas = document.getElementById("maincanvas");
         this.context = canvas.getContext("2d");
         
+        // Cargar puntuación máxima guardada
         const savedHighScore = localStorage.getItem("puzzle2d_highscore");
         this.highScore = savedHighScore ? parseInt(savedHighScore) : 0;
         this.updateHighScore();
         
+        // Inicializar módulos
         if (typeof loader !== "undefined" && loader.init) loader.init();
         if (typeof physics !== "undefined" && physics.init) physics.init();
         if (typeof mouse !== "undefined" && mouse.init) mouse.init();
@@ -38,6 +41,7 @@ const game = {
         this.hideScreens();
         this.showScreen("gamestartscreen");
 
+        // Configurar botones de UI
         const muteButton = document.getElementById("mutebutton");
         if (muteButton) {
             muteButton.addEventListener("click", () => {
@@ -59,12 +63,14 @@ const game = {
             });
         }
 
+        // Botón principal de juego
         const playButton = document.getElementById("playbutton");
         if (playButton) {
             playButton.addEventListener("click", () => {
                 this.hideScreens();
                 this.showScreen("loadingscreen");
 
+                // Cargar recursos del juego
                 loader.onload = () => {
                     this.sounds.music = loader.sounds["8-bit-loop"];
                     this.sounds.launch = loader.sounds["space-laser-shot"];
@@ -79,6 +85,7 @@ const game = {
                     this.startGameLoop();
                 };
 
+                // Cargar assets específicos del nivel
                 const currentLevel = levels.data[levels.current];
                 if (currentLevel && currentLevel.requiredAssets) {
                     if (Array.isArray(currentLevel.requiredAssets.images)) {
@@ -97,6 +104,7 @@ const game = {
         }
     },
 
+    // Manejo de pantallas
     hideScreens: function() {
         const screens = document.getElementsByClassName("gamelayer");
         for (let i = screens.length - 1; i >= 0; i--) {
@@ -111,6 +119,7 @@ const game = {
         }
     },
 
+    // Carga de niveles
     loadLevel: function(levelIndex) {
         const level = levels.data[levelIndex];
         if (!level) {
@@ -118,6 +127,7 @@ const game = {
             return;
         }
 
+        // Reiniciar estado del nivel
         this.entities = [];
         this.currentHero = null;
         this.state = "waiting";
@@ -127,6 +137,7 @@ const game = {
 
         console.log("Cargando nivel", levelIndex, "con", level.entities.length, "entidades");
 
+        // Crear entidades del nivel
         level.entities.forEach(entInfo => {
             const ent = entities.create(entInfo);
             if (ent) {
@@ -141,6 +152,7 @@ const game = {
         });
     },
 
+    // Sistema de colisiones
     handleCollision: function(entityA, entityB, impulseForce, contactPoint) {
         const isStaticCollision = (entityA.type === "static" || entityB.type === "static");
         
@@ -148,10 +160,12 @@ const game = {
             return;
         }
         
+        // Reproducir sonido en colisiones fuertes
         if (impulseForce > 15) {
             this.playSound("explosion");
         }
         
+        // Calcular y aplicar daño
         const damage = Math.round(impulseForce * 2);
         
         if (entityA.type !== "static" && entityA.health !== undefined) {
@@ -161,33 +175,41 @@ const game = {
             this.applyDamage(entityB, damage, contactPoint);
         }
         
+        // Efecto de sacudida en colisiones fuertes
         if (impulseForce > 20) {
             this.shakeIntensity = Math.min(impulseForce / 10, 10);
         }
     },
 
+    // Aplicar daño a entidades
     applyDamage: function(entity, damage, contactPoint) {
         if (!entity.health) return;
         
         entity.health -= damage;
         
+        // Crear indicador visual de daño
         const worldX = contactPoint.x * physics.scale;
         const worldY = contactPoint.y * physics.scale;
         this.createDamageIndicator(worldX, worldY, damage);
         
+        // Destruir entidad si se queda sin salud
         if (entity.health <= 0) {
             this.destroyEntity(entity, worldX, worldY);
         }
     },
 
+    // Destruir entidad
     destroyEntity: function(entity, x, y) {
+        // Efectos de partículas
         this.createExplosionParticles(x, y, entity.type);
         
+        // Sumar puntos por destrucción
         if ((entity.type === "villain" || entity.type === "block") && entity.points) {
             this.score += entity.points;
             this.updateScore();
         }
         
+        // Remover cuerpo físico
         if (entity.body) {
             physics.removeBody(entity.body);
             entity.body = null;
@@ -196,23 +218,24 @@ const game = {
         entity.destroyed = true;
     },
 
+    // Indicadores de daño flotantes
     createDamageIndicator: function(x, y, damage) {
-        // ✅ MEJORAR: Color según daño
-        let color = "#ff0"; // Amarillo por defecto
-        if (damage > 50) color = "#f00"; // Rojo para mucho daño
-        else if (damage > 20) color = "#f80"; // Naranja para daño medio
+        let color = "#ff0";
+        if (damage > 50) color = "#f00";
+        else if (damage > 20) color = "#f80";
         
         this.damageIndicators.push({
             x: x,
             y: y,
             text: `-${damage}`,
-            color: color, // ✅ NUEVO
+            color: color,
             alpha: 1.0,
             lifetime: 0,
             maxLifetime: 1.0
         });
     },
 
+    // Sistema de partículas para explosiones
     createExplosionParticles: function(x, y, type) {
         const particleCount = 15;
         const color = type === "villain" ? "#f00" : "#a52a2a";
@@ -235,6 +258,7 @@ const game = {
         }
     },
 
+    // Actualizar puntuación en UI
     updateScore: function() {
         const scoreElement = document.getElementById("score");
         if (scoreElement) {
@@ -242,6 +266,7 @@ const game = {
         }
     },
 
+    // Sistema de audio
     playMusic: function() {
         if (this.sounds.music && !this.isMuted && !this.musicPlaying) {
             this.sounds.music.loop = true;
@@ -288,6 +313,7 @@ const game = {
         }
     },
 
+    // Manejo de puntuación máxima
     updateHighScore: function() {
         const highScoreElements = document.querySelectorAll("#highscore, #losehighscore");
         highScoreElements.forEach(el => {
@@ -303,6 +329,7 @@ const game = {
         }
     },
 
+    // Navegación entre niveles
     nextLevel: function() {
         this.currentLevel++;
         if (this.currentLevel >= levels.data.length) {
@@ -310,9 +337,8 @@ const game = {
         }
         levels.current = this.currentLevel;
         
-        // ✅ NUEVO: No reiniciar puntuación, pero sí mantener vidas
-        // Si quieres dar vidas extra por nivel:
-        this.heroesRemaining = Math.min(this.heroesRemaining + 1, 5); // Máximo 5 héroes
+        // Bonus: vidas extra por completar nivel
+        this.heroesRemaining = Math.min(this.heroesRemaining + 1, 5);
         
         this.hideScreens();
         this.loadLevel(this.currentLevel);
@@ -330,6 +356,7 @@ const game = {
         this.showScreen("scorescreen");
     },
 
+    // Bucle principal del juego
     startGameLoop: function() {
         this.lastTick = Date.now();
         const loop = () => {
@@ -345,17 +372,21 @@ const game = {
         loop();
     },
 
+    // Actualización del estado del juego
     update: function(deltaTime) {
+        // Paso de física
         if (typeof physics !== "undefined" && physics.step) {
             physics.step(deltaTime);
         }
 
+        // Efecto de sacudida de cámara
         if (this.shakeIntensity > 0.1) {
             this.shakeIntensity *= this.shakeDecay;
         } else {
             this.shakeIntensity = 0;
         }
 
+        // Actualizar indicadores de daño
         this.damageIndicators = this.damageIndicators.filter(indicator => {
             indicator.lifetime += deltaTime;
             indicator.y -= 30 * deltaTime;
@@ -363,6 +394,7 @@ const game = {
             return indicator.lifetime < indicator.maxLifetime;
         });
 
+        // Actualizar sistema de partículas
         this.particles = this.particles.filter(particle => {
             particle.lifetime += deltaTime;
             particle.x += particle.vx * deltaTime;
@@ -372,12 +404,15 @@ const game = {
             return particle.lifetime < particle.maxLifetime;
         });
 
+        // Limpiar entidades destruidas
         this.entities = this.entities.filter(ent => !ent.destroyed);
         this.checkWinLoseConditions();
 
+        // Máquina de estados del juego
         switch (this.state) {
             case "waiting":
                 if (!this.currentHero) {
+                    // Buscar héroe disponible
                     for (let i = 0; i < this.entities.length; i++) {
                         if (this.entities[i].type === "hero" && this.entities[i].body) {
                             this.currentHero = this.entities[i];
@@ -386,6 +421,7 @@ const game = {
                     }
                 }
 
+                // Iniciar apuntado al hacer clic en héroe
                 if (this.currentHero && this.currentHero.body && mouse.isDown) {
                     const heroPos = this.currentHero.body.GetPosition();
                     const heroPixelX = heroPos.x * physics.scale;
@@ -404,6 +440,7 @@ const game = {
                 break;
                 
             case "aiming":
+                // Disparar al soltar el clic
                 if (!mouse.isDown) {
                     this.state = "fired";
                     this.isAiming = false;
@@ -417,6 +454,7 @@ const game = {
                         let dx = heroPixelX - mouse.x;
                         let dy = heroPixelY - mouse.y;
                         
+                        // Limitar fuerza máxima
                         const distance = Math.sqrt(dx * dx + dy * dy);
                         if (distance > this.maxForce * physics.scale) {
                             const factor = (this.maxForce * physics.scale) / distance;
@@ -424,6 +462,7 @@ const game = {
                             dy *= factor;
                         }
                         
+                        // Aplicar impulso físico
                         const impulseVector = new b2Vec2(dx * 0.1, dy * 0.1);
                         this.currentHero.body.ApplyImpulse(impulseVector, heroPos);
                     }
@@ -439,6 +478,7 @@ const game = {
                     const heroPixelX = heroPos.x * physics.scale;
                     const heroPixelY = heroPos.y * physics.scale;
                     
+                    // Verificar si el héroe salió de pantalla
                     const outOfBounds = (
                         heroPixelX < -50 || heroPixelX > 690 ||
                         heroPixelY > 530
@@ -453,6 +493,7 @@ const game = {
                         return;
                     }
                     
+                    // Cambiar de turno si se detiene
                     if (speed < 0.5) {
                         this.heroWaitTimer += deltaTime;
                         
@@ -471,17 +512,20 @@ const game = {
         }
     },
 
+    // Verificar condiciones de victoria/derrota
     checkWinLoseConditions: function() {
         const enemiesAlive = this.entities.filter(e => 
             (e.type === "villain" || e.type === "block") && !e.destroyed
         ).length;
         
+        // Victoria: todos los enemigos destruidos
         if (enemiesAlive === 0 && this.state !== "won" && this.state !== "lost") {
             this.state = "won";
             this.saveHighScore();
             this.showVictoryScreen();
         }
         
+        // Derrota: sin héroes y enemigos vivos
         if (this.heroesRemaining <= 0 && enemiesAlive > 0 && this.state !== "lost" && this.state !== "won") {
             this.state = "lost";
             this.saveHighScore();
@@ -489,13 +533,13 @@ const game = {
         }
     },
 
+    // Pantallas de resultado
     showVictoryScreen: function() {
         this.hideScreens();
         this.showScreen("winscreen");
         const winScore = document.getElementById("winscore");
         if (winScore) winScore.innerHTML = this.score;
         
-        // ✅ NUEVO: Mostrar qué nivel se completó
         const winLevel = document.getElementById("winlevel");
         if (winLevel) winLevel.innerHTML = this.currentLevel + 1;
     },
@@ -509,13 +553,14 @@ const game = {
         if (loseHighScore) loseHighScore.innerHTML = this.highScore;
     },
 
+    // Actualizar interfaz de usuario
     updateHUD: function() {
         const heroesElement = document.getElementById("heroes");
         const levelElement = document.getElementById("level");
         if (heroesElement) heroesElement.innerHTML = this.heroesRemaining;
         if (levelElement) levelElement.innerHTML = this.currentLevel + 1;
         
-        // ✅ NUEVO: Mostrar enemigos restantes
+        // Mostrar contador de enemigos
         const enemiesElement = document.getElementById("enemies");
         if (enemiesElement) {
             const count = this.entities.filter(e => 
@@ -525,31 +570,37 @@ const game = {
         }
     },
 
+    // Renderizado del juego
     draw: function() {
         const ctx = this.context;
         
         ctx.save();
+        // Efecto de sacudida de cámara
         if (this.shakeIntensity > 0) {
             const offsetX = (Math.random() - 0.5) * this.shakeIntensity;
             const offsetY = (Math.random() - 0.5) * this.shakeIntensity;
             ctx.translate(offsetX, offsetY);
         }
         
+        // Fondo con gradiente
         const gradient = ctx.createLinearGradient(0, 0, 0, 480);
         gradient.addColorStop(0, "#1a1a2e");
         gradient.addColorStop(1, "#0f0f1e");
         ctx.fillStyle = gradient;
         ctx.fillRect(0, 0, 640, 480);
 
+        // Dibujar sombras
         this.entities.forEach(ent => {
             this.drawEntityShadow(ent);
         });
         
+        // Dibujar entidades y barras de salud
         this.entities.forEach(ent => {
             this.drawEntity(ent);
             this.drawHealthBar(ent);
         });
 
+        // Dibujar partículas
         this.particles.forEach(particle => {
             ctx.globalAlpha = particle.alpha;
             ctx.fillStyle = particle.color;
@@ -559,14 +610,16 @@ const game = {
         });
         ctx.globalAlpha = 1.0;
 
+        // Dibujar indicadores de daño
         this.damageIndicators.forEach(indicator => {
             ctx.globalAlpha = indicator.alpha;
-            ctx.fillStyle = indicator.color; // ✅ Usar color dinámico
+            ctx.fillStyle = indicator.color;
             ctx.font = "bold 16px Arial";
             ctx.fillText(indicator.text, indicator.x, indicator.y);
         });
         ctx.globalAlpha = 1.0;
 
+        // Dibujar línea de apuntado
         if (this.isAiming && this.currentHero && this.currentHero.body) {
             const heroPos = this.currentHero.body.GetPosition();
             const heroPixelX = heroPos.x * physics.scale;
@@ -575,6 +628,7 @@ const game = {
             let dx = mouse.x - heroPixelX;
             let dy = mouse.y - heroPixelY;
             
+            // Limitar longitud de línea
             const distance = Math.sqrt(dx * dx + dy * dy);
             if (distance > this.maxForce * physics.scale) {
                 const factor = (this.maxForce * physics.scale) / distance;
@@ -592,6 +646,7 @@ const game = {
             ctx.lineTo(targetX, targetY);
             ctx.stroke();
             
+            // Indicador de fuerza máxima
             if (distance > this.maxForce * physics.scale) {
                 ctx.fillStyle = "rgba(255, 0, 0, 0.3)";
                 ctx.beginPath();
@@ -603,6 +658,7 @@ const game = {
         ctx.restore();
     },
 
+    // Dibujar sombra de entidad
     drawEntityShadow: function(ent) {
         if (!ent.body || ent.nombre === "wall") return;
 
@@ -629,6 +685,7 @@ const game = {
         ctx.restore();
     },
 
+    // Dibujar entidad
     drawEntity: function(ent) {
         if (!ent.body) return;
 
@@ -649,6 +706,7 @@ const game = {
         const imageName = ent.imageName;
         const image = imageName ? loader.images[imageName] : null;
 
+        // Dibujar con imagen o forma geométrica
         if (image && image.complete) {
             if (ent.radius) {
                 const size = ent.radius * 2;
@@ -657,6 +715,7 @@ const game = {
                 ctx.drawImage(image, -ent.width/2, -ent.height/2, ent.width, ent.height);
             }
         } else {
+            // Colores por tipo de entidad
             if (ent.type === "hero") {
                 ctx.fillStyle = "#2196F3";
             } else if (ent.type === "villain") {
@@ -667,6 +726,7 @@ const game = {
                 ctx.fillStyle = "#4CAF50";
             }
 
+            // Dibujar forma circular o rectangular
             if (ent.radius) {
                 ctx.beginPath();
                 ctx.arc(0, 0, ent.radius, 0, Math.PI * 2);
@@ -687,6 +747,7 @@ const game = {
         ctx.restore();
     },
 
+    // Dibujar barra de salud
     drawHealthBar: function(ent) {
         if (!ent.body || !ent.health || ent.type === "static" || ent.nombre === "wall") return;
 
@@ -701,18 +762,22 @@ const game = {
         const barWidth = 40;
         const barHeight = 5;
 
+        // Fondo de barra
         ctx.fillStyle = "#333";
         ctx.fillRect(x - barWidth / 2, y, barWidth, barHeight);
 
+        // Barra de salud con color dinámico
         ctx.fillStyle = healthPercent > 0.5 ? "#4CAF50" : (healthPercent > 0.25 ? "#FFC107" : "#f44336");
         ctx.fillRect(x - barWidth / 2, y, barWidth * healthPercent, barHeight);
 
+        // Borde de barra
         ctx.strokeStyle = "#fff";
         ctx.lineWidth = 1;
         ctx.strokeRect(x - barWidth / 2, y, barWidth, barHeight);
     }
 };
 
+// Iniciar juego al cargar la página
 window.addEventListener("load", function() {
     game.init();
 });
