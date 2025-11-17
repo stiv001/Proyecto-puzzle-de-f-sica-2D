@@ -11,6 +11,7 @@ const loader = {
     soundFileExtn: undefined, // Qué formato de audio usará el navegador.
     onload: null, // Función "callback" que se ejecutará cuando TODO esté cargado.
     images: {}, // ✅ NUEVO: Almacenar imágenes cargadas
+    sounds: {}, // ✅ NUEVO: Almacenar sonidos cargados
 
     // -- Métodos (Funciones) del Cargador --
 
@@ -19,12 +20,12 @@ const loader = {
         const mp3 = audio.canPlayType("audio/mpeg");
         const ogg = audio.canPlayType("audio/ogg; codecs=\"vorbis\"");
         this.soundFileExtn = ogg ? ".ogg" : (mp3 ? ".mp3" : undefined);
+        console.log("🔊 Formato de audio detectado:", this.soundFileExtn || "NINGUNO");
     },
 
     loadImage: function(url) {
         this.totalCount++;
         this.loaded = false;
-        try { game.showScreen("loadingscreen"); } catch (e) {}
         this.updateMessage();
 
         const img = new Image();
@@ -32,11 +33,12 @@ const loader = {
         
         img.addEventListener("load", function() {
             loader.images[name] = img; // ✅ Guardar imagen
+            console.log("✅ Imagen cargada:", name);
             loader.itemLoaded();
         }, false);
         
         img.addEventListener("error", function() {
-            console.warn("❌ No se pudo cargar:", url);
+            console.warn("❌ Error cargando imagen:", url);
             loader.itemLoaded();
         }, false);
         
@@ -47,26 +49,30 @@ const loader = {
     loadSound: function(url) {
         this.totalCount++;
         this.loaded = false;
-        try { game.showScreen("loadingscreen"); } catch (e) {}
         this.updateMessage();
 
         const audio = new Audio();
+        const name = url.split('/').pop().split('.')[0]; // ✅ Extraer nombre sin extensión
         let src = url;
+        
+        // Si la URL NO tiene extensión, agregar la detectada
         if (!/\.(ogg|mp3)$/i.test(url) && this.soundFileExtn) {
             src = url + this.soundFileExtn;
         }
         
         audio.addEventListener("canplaythrough", function() {
+            loader.sounds[name] = audio; // ✅ Guardar sonido
+            console.log("✅ Sonido cargado:", name, "→", src);
             loader.itemLoaded();
         }, false);
         
         audio.addEventListener("error", function() {
-            console.warn("❌ No se pudo cargar:", src);
+            console.warn("❌ Error cargando sonido:", src);
             loader.itemLoaded();
         }, false);
         
         audio.src = src;
-        if (audio.load) audio.load();
+        audio.load();
         return audio;
     },
 
@@ -96,6 +102,11 @@ const loader = {
             // ¡SÍ! Todo está "procesado".
             
             loader.loaded = true;
+            
+            console.log("🎉 CARGA COMPLETA");
+            console.log("📸 Imágenes cargadas:", Object.keys(loader.images));
+            console.log("🔊 Sonidos cargados:", Object.keys(loader.sounds));
+            
             loader.loadedCount = 0;
             loader.totalCount = 0;
 

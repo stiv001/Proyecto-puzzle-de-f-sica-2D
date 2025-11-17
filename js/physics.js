@@ -105,9 +105,19 @@ const physics = {
         // 2. Definición de la Forma (FixtureDef)
         //    Define la forma, densidad, fricción y rebote del cuerpo.
         const fixtureDef = new b2FixtureDef();
-        fixtureDef.density = 1.0; // Densidad (peso)
-        fixtureDef.friction = 0.5; // Fricción
-        fixtureDef.restitution = 0.3; // Rebote (0=nada, 1=mucho)
+        fixtureDef.density = 1.0;
+        
+        // ✅ MEJORAR: Fricción diferente según tipo
+        if (entidad.type === "hero") {
+            fixtureDef.friction = 0.8; // Más fricción para el héroe
+            fixtureDef.restitution = 0.2; // Menos rebote
+        } else if (entidad.type === "block") {
+            fixtureDef.friction = 0.6;
+            fixtureDef.restitution = 0.1; // Bloques casi no rebotan
+        } else {
+            fixtureDef.friction = 0.5;
+            fixtureDef.restitution = 0.3;
+        }
 
         // 3. Asignar la Forma (Shape)
         //    Le dice a Box2D si es un círculo o un rectángulo.

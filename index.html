@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Mi Juego de Física</title>
+    <title>Puzzle de Física 2D - Proyecto Bimestre 1</title>
     <meta name="viewport"
         content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width">
     <link rel="stylesheet" href="style.css">
@@ -19,9 +19,12 @@
 
         <!-- Menú principal -->
         <div id="gamestartscreen" class="gamelayer">
-            <h1>Mi Juego de Física</h1>
+            <h1>Puzzle de Física 2D</h1>
+            <p>Destruye todos los enemigos y bloques</p>
             <button id="playbutton">Jugar</button>
-            <div>Puntuación Máxima: <span id="highscore">0</span></div>
+            <div class="highscore-display">
+                Puntuación Máxima: <span id="highscore">0</span>
+            </div>
         </div>
 
         <!-- Canvas del juego -->
@@ -31,8 +34,29 @@
 
         <!-- HUD (marcador) -->
         <div id="scorescreen" class="gamelayer">
-            <span>Puntuación: <span id="score">0</span></span>
-            <button id="mutebutton">Silenciar</button>
+            <div class="score-container">
+                <div>Puntuación: <span id="score">0</span></div>
+                <div>Nivel: <span id="level">1</span></div>
+                <div>Héroes: <span id="heroes">3</span></div>
+                <div>Enemigos: <span id="enemies">0</span></div> <!-- ✅ NUEVO -->
+            </div>
+            <!-- ✅ NUEVO: Botón de silenciar -->
+            <button id="mutebutton" class="control-button">🔊 Sonido</button>
+        </div>
+
+        <!-- ✅ NUEVO: Pantalla de Victoria -->
+        <div id="winscreen" class="gamelayer">
+            <h1>¡Nivel <span id="winlevel">1</span> Completado! 🎉</h1>
+            <p>Puntuación: <span id="winscore">0</span></p>
+            <button id="nextlevelbutton">Siguiente Nivel</button>
+        </div>
+
+        <!-- ✅ NUEVO: Pantalla de Derrota -->
+        <div id="losescreen" class="gamelayer">
+            <h1>Game Over 💀</h1>
+            <p>Puntuación Final: <span id="losescore">0</span></p>
+            <p>Puntuación Máxima: <span id="losehighscore">0</span></p>
+            <button id="restartbutton">Reintentar</button>
         </div>
 
     </div>

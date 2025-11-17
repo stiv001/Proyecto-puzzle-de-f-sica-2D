@@ -1,10 +1,9 @@
 /* Estilo básico para que el juego ocupe toda la pantalla sin márgenes */
 body {
-    background: #000; /* Fondo negro */
-    color: #fff; /* Texto blanco */
     margin: 0;
     padding: 0;
-    overflow: hidden; /* Evita barras de scroll */
+    background: #000;
+    font-family: 'Arial', sans-serif;
 }
 
 /* El contenedor principal del juego.
@@ -15,14 +14,11 @@ body {
 #gamecontainer {
     width: 640px;
     height: 480px;
+    margin: 20px auto;
     position: relative;
-    border: 1px solid #fff; /* Borde blanco para verlo */
-
-    /* Truco para centrar el juego perfectamente en la pantalla */
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    position: absolute;
+    background: #1a1a2e;
+    border: 3px solid #2196F3;
+    box-shadow: 0 0 20px rgba(33, 150, 243, 0.5);
 }
 
 /* ¡LA REGLA MÁS IMPORTANTE!
@@ -34,8 +30,8 @@ body {
       dentro de su 'gamecontainer'.
     */
     position: absolute;
-    width: 100%;
-    height: 100%;
+    width: 640px;
+    height: 480px;
     top: 0;
     left: 0;
 
@@ -48,25 +44,168 @@ body {
     text-align: center;
 }
 
-/* Estilos específicos para el canvas del juego */
-#gamecanvas {
-    /* El canvas no necesita centrar texto */
-    text-align: left;
+/* Pantalla de carga */
+#loadingscreen {
+    background: rgba(0, 0, 0, 0.9);
+    z-index: 100;
 }
 
-/* Estilos para el HUD (marcador) */
-#scorescreen {
-    /* Lo ponemos semitransparente para que se vea el juego detrás */
-    background: rgba(0, 0, 0, 0.3);
-    height: 40px; /* Solo ocupa la parte de arriba */
-}
-
-/* Estilos para el menú */
-#gamestartscreen h1 {
-    margin-top: 100px;
-    font-size: 40px;
-}
-#gamestartscreen button {
+#loadingmessage {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #2196F3;
     font-size: 24px;
+    text-align: center;
+}
+
+/* Menú principal */
+#gamestartscreen {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: white;
+}
+
+#gamestartscreen h1 {
+    font-size: 48px;
+    margin: 20px;
+    color: #2196F3;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+#gamestartscreen p {
+    font-size: 18px;
+    margin: 10px;
+    color: #ccc;
+}
+
+#playbutton, #nextlevelbutton, #restartbutton {
+    background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+    color: white;
+    border: none;
+    padding: 15px 40px;
+    font-size: 24px;
+    border-radius: 10px;
+    cursor: pointer;
+    margin: 20px;
+    box-shadow: 0 4px 10px rgba(33, 150, 243, 0.3);
+    transition: all 0.3s;
+}
+
+#playbutton:hover, #nextlevelbutton:hover, #restartbutton:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 15px rgba(33, 150, 243, 0.5);
+}
+
+.highscore-display {
+    font-size: 20px;
+    color: #FFD700;
+    margin-top: 20px;
+}
+
+/* Canvas */
+#gamecanvas {
+    z-index: 10;
+}
+
+#maincanvas {
+    background: #0f0f1e;
+}
+
+/* HUD */
+#scorescreen {
+    z-index: 15;
+    pointer-events: none;
+}
+
+.score-container {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 15px;
+    border-radius: 10px;
+    color: white;
+    font-size: 18px;
+    pointer-events: auto;
+}
+
+.score-container div {
+    margin: 5px 0;
+}
+
+#score {
+    color: #FFD700;
+    font-size: 24px;
+    font-weight: bold;
+}
+
+#level {
+    color: #2196F3;
+    font-weight: bold;
+}
+
+#heroes {
+    color: #f44336;
+    font-weight: bold;
+}
+
+/* Botón de silenciar */
+#mutebutton {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    border: 2px solid #2196F3;
     padding: 10px 20px;
+    font-size: 16px;
+    border-radius: 5px;
+    cursor: pointer;
+    pointer-events: auto;
+    transition: all 0.3s;
+}
+
+#mutebutton:hover {
+    background: rgba(33, 150, 243, 0.3);
+}
+
+/* Pantallas de victoria y derrota */
+#winscreen, #losescreen {
+    background: rgba(0, 0, 0, 0.95);
+    z-index: 50;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: white;
+}
+
+#winscreen h1 {
+    color: #4CAF50;
+    font-size: 48px;
+    margin: 20px;
+    text-shadow: 2px 2px 8px rgba(76, 175, 80, 0.5);
+}
+
+#losescreen h1 {
+    color: #f44336;
+    font-size: 48px;
+    margin: 20px;
+    text-shadow: 2px 2px 8px rgba(244, 67, 54, 0.5);
+}
+
+#winscreen p, #losescreen p {
+    font-size: 24px;
+    margin: 10px;
+}
+
+#winscore, #losescore, #losehighscore {
+    color: #FFD700;
+    font-weight: bold;
 }

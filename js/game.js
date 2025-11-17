@@ -16,10 +16,20 @@ const game = {
     shakeDecay: 0.9,
     damageIndicators: [],
     particles: [],
+    sounds: {},
+    musicPlaying: false,
+    isMuted: false,
+    currentLevel: 0,
+    heroesRemaining: 3,
+    highScore: 0,
 
     init: function() {
         const canvas = document.getElementById("maincanvas");
         this.context = canvas.getContext("2d");
+        
+        const savedHighScore = localStorage.getItem("puzzle2d_highscore");
+        this.highScore = savedHighScore ? parseInt(savedHighScore) : 0;
+        this.updateHighScore();
         
         if (typeof loader !== "undefined" && loader.init) loader.init();
         if (typeof physics !== "undefined" && physics.init) physics.init();
@@ -28,6 +38,27 @@ const game = {
         this.hideScreens();
         this.showScreen("gamestartscreen");
 
+        const muteButton = document.getElementById("mutebutton");
+        if (muteButton) {
+            muteButton.addEventListener("click", () => {
+                this.toggleMute();
+            });
+        }
+
+        const nextLevelButton = document.getElementById("nextlevelbutton");
+        if (nextLevelButton) {
+            nextLevelButton.addEventListener("click", () => {
+                this.nextLevel();
+            });
+        }
+
+        const restartButton = document.getElementById("restartbutton");
+        if (restartButton) {
+            restartButton.addEventListener("click", () => {
+                this.restart();
+            });
+        }
+
         const playButton = document.getElementById("playbutton");
         if (playButton) {
             playButton.addEventListener("click", () => {
@@ -35,9 +66,16 @@ const game = {
                 this.showScreen("loadingscreen");
 
                 loader.onload = () => {
+                    this.sounds.music = loader.sounds["8-bit-loop"];
+                    this.sounds.launch = loader.sounds["space-laser-shot"];
+                    this.sounds.impact = loader.sounds["explosion"];
+                    
+                    console.log("🎵 Sonidos cargados:", Object.keys(loader.sounds));
+                    
                     this.showScreen("gamecanvas");
                     this.showScreen("scorescreen");
                     this.loadLevel(levels.current);
+                    this.playMusic();
                     this.startGameLoop();
                 };
 
@@ -84,8 +122,8 @@ const game = {
         this.currentHero = null;
         this.state = "waiting";
         this.heroWaitTimer = 0;
-        this.score = 0;
-        this.updateScore();
+        this.heroesRemaining = 3;
+        this.updateHUD();
 
         console.log("Cargando nivel", levelIndex, "con", level.entities.length, "entidades");
 
@@ -103,25 +141,19 @@ const game = {
         });
     },
 
-    // ✅ NUEVO: Manejo de colisiones
     handleCollision: function(entityA, entityB, impulseForce, contactPoint) {
-        // ✅ NUEVO: Ignorar colisiones con objetos estáticos (suelo/paredes)
         const isStaticCollision = (entityA.type === "static" || entityB.type === "static");
         
-        // ✅ NUEVO: No aplicar daño si uno de los objetos es estático
-        // (Evita que el héroe pierda vida al caer sobre el suelo)
         if (isStaticCollision) {
-            // Solo registramos la colisión pero NO aplicamos daño
-            console.log(`💫 Colisión con suelo/pared: ${entityA.type} vs ${entityB.type}, Fuerza: ${impulseForce.toFixed(2)}`);
-            return; // Salir sin aplicar daño
+            return;
         }
         
-        // Calculamos el daño basado en el impulso
+        if (impulseForce > 15) {
+            this.playSound("explosion");
+        }
+        
         const damage = Math.round(impulseForce * 2);
         
-        console.log(`💥 Colisión: ${entityA.type} vs ${entityB.type}, Fuerza: ${impulseForce.toFixed(2)}, Daño: ${damage}`);
-        
-        // Aplicamos daño a ambas entidades (si no son estáticas)
         if (entityA.type !== "static" && entityA.health !== undefined) {
             this.applyDamage(entityA, damage, contactPoint);
         }
@@ -129,7 +161,6 @@ const game = {
             this.applyDamage(entityB, damage, contactPoint);
         }
         
-        // Efecto de sacudida si el impacto es fuerte
         if (impulseForce > 20) {
             this.shakeIntensity = Math.min(impulseForce / 10, 10);
         }
@@ -140,180 +171,68 @@ const game = {
         
         entity.health -= damage;
         
-        // Crear indicador de daño flotante
         const worldX = contactPoint.x * physics.scale;
         const worldY = contactPoint.y * physics.scale;
         this.createDamageIndicator(worldX, worldY, damage);
         
-        console.log(`${entity.nombre || entity.type} recibe ${damage} de daño. Vida restante: ${entity.health}`);
-        
-        // Si la vida llega a 0 o menos, destruir la entidad
         if (entity.health <= 0) {
             this.destroyEntity(entity, worldX, worldY);
         }
     },
 
     destroyEntity: function(entity, x, y) {
-        console.log(`💀 ${entity.nombre || entity.type} destruido`);
-        
-        // Crear partículas de explosión
         this.createExplosionParticles(x, y, entity.type);
         
-        // ✅ CAMBIADO: Sumar puntos por ENEMIGOS Y BLOQUES
         if ((entity.type === "villain" || entity.type === "block") && entity.points) {
             this.score += entity.points;
             this.updateScore();
-            console.log(`⭐ +${entity.points} puntos. Puntuación total: ${this.score}`);
         }
         
-        // Remover el cuerpo físico
         if (entity.body) {
             physics.removeBody(entity.body);
             entity.body = null;
         }
         
-        // Marcar para eliminación
         entity.destroyed = true;
     },
 
-    startGameLoop: function() {
-        const loop = (timestamp) => {
-            const deltaTime = timestamp - this.lastTick;
-            this.lastTick = timestamp;
-            
-            this.update(deltaTime);
-            this.render();
-            
-            requestAnimationFrame(loop);
-        };
-        
-        requestAnimationFrame(loop);
-    },
-
-    update: function(deltaTime) {
-        if (this.state === "playing") {
-            // Actualizar lógica del juego
-            this.entities.forEach(entity => {
-                if (entity.update) {
-                    entity.update(deltaTime);
-                }
-            });
-            
-            // Limitar la sacudida con el tiempo
-            this.shakeIntensity *= this.shakeDecay;
-            if (this.shakeIntensity < 0.1) {
-                this.shakeIntensity = 0;
-            }
-        }
-    },
-
-    render: function() {
-        // Limpiar el canvas
-        this.context.clearRect(0, 0, this.context.canvas.width, this.context.canvas.height);
-        
-        // Aplicar efecto de sacudida
-        if (this.shakeIntensity > 0) {
-            const shakeX = (Math.random() - 0.5) * this.shakeIntensity;
-            const shakeY = (Math.random() - 0.5) * this.shakeIntensity;
-            this.context.translate(shakeX, shakeY);
-        }
-        
-        // Dibujar entidades
-        this.entities.forEach(entity => {
-            if (entity.draw) {
-                entity.draw(this.context);
-            }
-        });
-        
-        // Resetear transformación (importante para no afectar futuras dibujados)
-        this.context.setTransform(1, 0, 0, 1, 0, 0);
-    },
-
-    // ✅ NUEVO: Crear partículas de explosión
-    createExplosionParticles: function(x, y, entityType) {
-        const particleCount = 10;
-        for (let i = 0; i < particleCount; i++) {
-            const particle = {
-                x: x,
-                y: y,
-                size: Math.random() * 5 + 2,
-                color: entityType === "villain" ? "red" : "blue",
-                life: Math.random() * 20 + 10,
-                update: function() {
-                    this.y += Math.random() * -2 - 1;
-                    this.x += Math.random() * 2 - 1;
-                    this.size *= 0.95;
-                    this.life--;
-                },
-                draw: function(ctx) {
-                    ctx.fillStyle = this.color;
-                    ctx.beginPath();
-                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-                    ctx.fill();
-                }
-            };
-            this.particles.push(particle);
-        }
-    },
-
-    // ✅ NUEVO: Crear indicador de daño
     createDamageIndicator: function(x, y, damage) {
-        const indicator = {
+        // ✅ MEJORAR: Color según daño
+        let color = "#ff0"; // Amarillo por defecto
+        if (damage > 50) color = "#f00"; // Rojo para mucho daño
+        else if (damage > 20) color = "#f80"; // Naranja para daño medio
+        
+        this.damageIndicators.push({
             x: x,
             y: y,
-            damage: damage,
-            lifetime: 30,
-            alpha: 1,
-            update: function() {
-                this.y -= 1;
-                this.alpha -= 1 / this.lifetime;
-                this.lifetime--;
-            },
-            draw: function(ctx) {
-                ctx.fillStyle = `rgba(255, 0, 0, ${this.alpha})`;
-                ctx.font = "bold 12px Arial";
-                ctx.fillText(`-${this.damage}`, this.x, this.y);
-            }
-        };
-        this.damageIndicators.push(indicator);
+            text: `-${damage}`,
+            color: color, // ✅ NUEVO
+            alpha: 1.0,
+            lifetime: 0,
+            maxLifetime: 1.0
+        });
     },
 
-    // ✅ NUEVO: Actualizar partículas y indicadores de daño
-    updateParticles: function() {
-        this.particles = this.particles.filter(p => p.life > 0);
-        this.particles.forEach(p => p.update());
+    createExplosionParticles: function(x, y, type) {
+        const particleCount = 15;
+        const color = type === "villain" ? "#f00" : "#a52a2a";
         
-        this.damageIndicators = this.damageIndicators.filter(ind => ind.lifetime > 0);
-        this.damageIndicators.forEach(ind => ind.update());
-    },
-
-    // ✅ NUEVO: Renderizar partículas y indicadores de daño
-    renderParticles: function() {
-        this.particles.forEach(p => p.draw(this.context));
-        this.damageIndicators.forEach(ind => ind.draw(this.context));
-    },
-
-    // ✅ NUEVO: Método para pausar el juego
-    pause: function() {
-        this.state = "paused";
-    },
-
-    // ✅ NUEVO: Método para reanudar el juego
-    resume: function() {
-        this.state = "playing";
-    },
-
-    // ✅ NUEVO: Método para reiniciar el juego
-    restart: function() {
-        this.hideScreens();
-        this.showScreen("loadingscreen");
-
-        loader.onload = () => {
-            this.showScreen("gamecanvas");
-            this.showScreen("scorescreen");
-            this.loadLevel(levels.current);
-            this.startGameLoop();
-        };
+        for (let i = 0; i < particleCount; i++) {
+            const angle = (Math.PI * 2 * i) / particleCount;
+            const speed = 50 + Math.random() * 50;
+            
+            this.particles.push({
+                x: x,
+                y: y,
+                vx: Math.cos(angle) * speed,
+                vy: Math.sin(angle) * speed,
+                alpha: 1.0,
+                size: 3 + Math.random() * 5,
+                color: color,
+                lifetime: 0,
+                maxLifetime: 0.5 + Math.random() * 0.5
+            });
+        }
     },
 
     updateScore: function() {
@@ -321,6 +240,94 @@ const game = {
         if (scoreElement) {
             scoreElement.innerHTML = this.score;
         }
+    },
+
+    playMusic: function() {
+        if (this.sounds.music && !this.isMuted && !this.musicPlaying) {
+            this.sounds.music.loop = true;
+            this.sounds.music.volume = 0.3;
+            this.sounds.music.play().catch(e => console.warn("No se pudo reproducir música:", e));
+            this.musicPlaying = true;
+        }
+    },
+
+    playSound: function(soundName) {
+        let audioSource = null;
+        
+        if (this.sounds[soundName] && this.sounds[soundName].src) {
+            audioSource = this.sounds[soundName].src;
+        } else if (loader.sounds[soundName] && loader.sounds[soundName].src) {
+            audioSource = loader.sounds[soundName].src;
+        }
+        
+        if (audioSource && !this.isMuted) {
+            try {
+                const sound = new Audio(audioSource);
+                sound.volume = 0.7;
+                sound.play().catch(e => console.warn("⚠️ No se pudo reproducir:", soundName, e));
+                console.log("🔊 Reproduciendo:", soundName);
+            } catch (e) {
+                console.warn("❌ Error reproduciendo sonido:", soundName, e);
+            }
+        } else {
+            console.warn("⚠️ Sonido no encontrado:", soundName);
+        }
+    },
+
+    toggleMute: function() {
+        this.isMuted = !this.isMuted;
+        const muteButton = document.getElementById("mutebutton");
+        
+        if (this.isMuted) {
+            if (this.sounds.music) this.sounds.music.pause();
+            this.musicPlaying = false;
+            if (muteButton) muteButton.innerHTML = "🔇 Silenciado";
+        } else {
+            this.playMusic();
+            if (muteButton) muteButton.innerHTML = "🔊 Sonido";
+        }
+    },
+
+    updateHighScore: function() {
+        const highScoreElements = document.querySelectorAll("#highscore, #losehighscore");
+        highScoreElements.forEach(el => {
+            if (el) el.innerHTML = this.highScore;
+        });
+    },
+
+    saveHighScore: function() {
+        if (this.score > this.highScore) {
+            this.highScore = this.score;
+            localStorage.setItem("puzzle2d_highscore", this.highScore);
+            this.updateHighScore();
+        }
+    },
+
+    nextLevel: function() {
+        this.currentLevel++;
+        if (this.currentLevel >= levels.data.length) {
+            this.currentLevel = 0;
+        }
+        levels.current = this.currentLevel;
+        
+        // ✅ NUEVO: No reiniciar puntuación, pero sí mantener vidas
+        // Si quieres dar vidas extra por nivel:
+        this.heroesRemaining = Math.min(this.heroesRemaining + 1, 5); // Máximo 5 héroes
+        
+        this.hideScreens();
+        this.loadLevel(this.currentLevel);
+        this.showScreen("gamecanvas");
+        this.showScreen("scorescreen");
+    },
+
+    restart: function() {
+        this.currentLevel = 0;
+        levels.current = 0;
+        this.score = 0;
+        this.hideScreens();
+        this.loadLevel(0);
+        this.showScreen("gamecanvas");
+        this.showScreen("scorescreen");
     },
 
     startGameLoop: function() {
@@ -366,6 +373,7 @@ const game = {
         });
 
         this.entities = this.entities.filter(ent => !ent.destroyed);
+        this.checkWinLoseConditions();
 
         switch (this.state) {
             case "waiting":
@@ -373,7 +381,6 @@ const game = {
                     for (let i = 0; i < this.entities.length; i++) {
                         if (this.entities[i].type === "hero" && this.entities[i].body) {
                             this.currentHero = this.entities[i];
-                            console.log("Nuevo héroe seleccionado");
                             break;
                         }
                     }
@@ -392,7 +399,6 @@ const game = {
                     if (dist < this.currentHero.radius + 5) {
                         this.state = "aiming";
                         this.isAiming = true;
-                        console.log("¡Apuntando!");
                     }
                 }
                 break;
@@ -402,7 +408,7 @@ const game = {
                     this.state = "fired";
                     this.isAiming = false;
                     this.heroWaitTimer = 0;
-                    console.log("¡Fuego!");
+                    this.playSound("space-laser-shot");
                     
                     if (this.currentHero && this.currentHero.body) {
                         const heroPos = this.currentHero.body.GetPosition();
@@ -416,7 +422,6 @@ const game = {
                             const factor = (this.maxForce * physics.scale) / distance;
                             dx *= factor;
                             dy *= factor;
-                            console.log("⚠️ Fuerza limitada al máximo permitido");
                         }
                         
                         const impulseVector = new b2Vec2(dx * 0.1, dy * 0.1);
@@ -436,11 +441,12 @@ const game = {
                     
                     const outOfBounds = (
                         heroPixelX < -50 || heroPixelX > 690 ||
-                        heroPixelY < -50 || heroPixelY > 530
+                        heroPixelY > 530
                     );
                     
                     if (outOfBounds) {
-                        console.log("❌ Héroe fuera de límites, siguiente turno");
+                        this.heroesRemaining--;
+                        this.updateHUD();
                         this.currentHero = null;
                         this.state = "waiting";
                         this.heroWaitTimer = 0;
@@ -450,8 +456,9 @@ const game = {
                     if (speed < 0.5) {
                         this.heroWaitTimer += deltaTime;
                         
-                        if (this.heroWaitTimer > 1.0) {
-                            console.log("Héroe detenido, listo para nuevo disparo");
+                        if (this.heroWaitTimer > 1.5) {
+                            this.heroesRemaining--;
+                            this.updateHUD();
                             this.currentHero = null;
                             this.state = "waiting";
                             this.heroWaitTimer = 0;
@@ -461,6 +468,60 @@ const game = {
                     }
                 }
                 break;
+        }
+    },
+
+    checkWinLoseConditions: function() {
+        const enemiesAlive = this.entities.filter(e => 
+            (e.type === "villain" || e.type === "block") && !e.destroyed
+        ).length;
+        
+        if (enemiesAlive === 0 && this.state !== "won" && this.state !== "lost") {
+            this.state = "won";
+            this.saveHighScore();
+            this.showVictoryScreen();
+        }
+        
+        if (this.heroesRemaining <= 0 && enemiesAlive > 0 && this.state !== "lost" && this.state !== "won") {
+            this.state = "lost";
+            this.saveHighScore();
+            this.showLoseScreen();
+        }
+    },
+
+    showVictoryScreen: function() {
+        this.hideScreens();
+        this.showScreen("winscreen");
+        const winScore = document.getElementById("winscore");
+        if (winScore) winScore.innerHTML = this.score;
+        
+        // ✅ NUEVO: Mostrar qué nivel se completó
+        const winLevel = document.getElementById("winlevel");
+        if (winLevel) winLevel.innerHTML = this.currentLevel + 1;
+    },
+
+    showLoseScreen: function() {
+        this.hideScreens();
+        this.showScreen("losescreen");
+        const loseScore = document.getElementById("losescore");
+        const loseHighScore = document.getElementById("losehighscore");
+        if (loseScore) loseScore.innerHTML = this.score;
+        if (loseHighScore) loseHighScore.innerHTML = this.highScore;
+    },
+
+    updateHUD: function() {
+        const heroesElement = document.getElementById("heroes");
+        const levelElement = document.getElementById("level");
+        if (heroesElement) heroesElement.innerHTML = this.heroesRemaining;
+        if (levelElement) levelElement.innerHTML = this.currentLevel + 1;
+        
+        // ✅ NUEVO: Mostrar enemigos restantes
+        const enemiesElement = document.getElementById("enemies");
+        if (enemiesElement) {
+            const count = this.entities.filter(e => 
+                (e.type === "villain" || e.type === "block") && !e.destroyed
+            ).length;
+            enemiesElement.innerHTML = count;
         }
     },
 
@@ -500,7 +561,7 @@ const game = {
 
         this.damageIndicators.forEach(indicator => {
             ctx.globalAlpha = indicator.alpha;
-            ctx.fillStyle = "#ff0";
+            ctx.fillStyle = indicator.color; // ✅ Usar color dinámico
             ctx.font = "bold 16px Arial";
             ctx.fillText(indicator.text, indicator.x, indicator.y);
         });
@@ -585,22 +646,17 @@ const game = {
             return;
         }
 
-        // ✅ NUEVO: Intentar dibujar imagen primero
         const imageName = ent.imageName;
         const image = imageName ? loader.images[imageName] : null;
 
         if (image && image.complete) {
-            // Dibujar imagen (sprite)
             if (ent.radius) {
-                // Para círculos: centrar la imagen
                 const size = ent.radius * 2;
                 ctx.drawImage(image, -ent.radius, -ent.radius, size, size);
             } else if (ent.width && ent.height) {
-                // Para rectángulos: centrar la imagen
                 ctx.drawImage(image, -ent.width/2, -ent.height/2, ent.width, ent.height);
             }
         } else {
-            // ✅ FALLBACK: Dibujar formas de colores si no hay imagen
             if (ent.type === "hero") {
                 ctx.fillStyle = "#2196F3";
             } else if (ent.type === "villain") {
