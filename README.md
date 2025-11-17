@@ -137,3 +137,20 @@ Abrir `index.html` en el navegador
 - **Fuerza máxima**: 8 unidades
 - **Vidas iniciales**: 3
 
+---
+
+## Rúbrica y Autoevaluación 
+
+| Criterio                            | Peso | Puntaje | Justificación |
+|------------------------------------|------|--------|---------------|
+| Funcionalidad núcleo               | 25%  | 20     | Loop, loader, menú, win/lose. |
+| Mecánicas / IA / Puzzles           | 15%  | 12      | Mecánica única de lanzamiento y destrucción. |
+| Física / Colisiones                | 10%  | 9      | Box2D integrado. |
+| Rendimiento                        | 10%  | 8      | Fluido visualmente.
+| UX / UI                            | 10%  | 8      | HUD básico y pantallas. 
+| Audio                              | 5%   | 5      | Música loop y mute por botón. |
+| Código / Arquitectura              | 15%  | 12     | Modular (game, physics, loader, levels, entities, mouse) |
+| Documentación / Presentación       | 10%  | 7      | README con estructura y controles;
+
+**Total:** 81 / 100
+
