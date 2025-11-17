@@ -13,6 +13,7 @@ const b2Body = Box2D.Dynamics.b2Body;
 const b2FixtureDef = Box2D.Dynamics.b2FixtureDef;
 const b2PolygonShape = Box2D.Collision.Shapes.b2PolygonShape;
 const b2CircleShape = Box2D.Collision.Shapes.b2CircleShape;
+const b2ContactListener = Box2D.Dynamics.b2ContactListener;
 
 const physics = {
     // El "mundo" de Box2D donde toda la simulación ocurre.
@@ -33,6 +34,53 @@ const physics = {
         // 2. Crea el mundo de Box2D
         // 'true' permite que los objetos se "duerman" si no se mueven.
         this.world = new b2World(gravity, true); 
+        
+        // ✅ NUEVO: Crear el Contact Listener
+        this.setupContactListener();
+    },
+
+    setupContactListener: function() {
+        const listener = new b2ContactListener();
+        
+        // ✅ BeginContact: Se llama cuando DOS cuerpos empiezan a tocarse
+        listener.BeginContact = function(contact) {
+            // No hacemos nada aquí por ahora
+        };
+        
+        // ✅ PostSolve: Se llama DESPUÉS de resolver la colisión
+        // Aquí tenemos acceso al IMPULSO (fuerza del choque)
+        listener.PostSolve = function(contact, impulse) {
+            // Obtenemos los dos cuerpos que chocaron
+            const bodyA = contact.GetFixtureA().GetBody();
+            const bodyB = contact.GetFixtureB().GetBody();
+            
+            // Obtenemos nuestras entidades (guardadas con SetUserData)
+            const entityA = bodyA.GetUserData();
+            const entityB = bodyB.GetUserData();
+            
+            // Si ambas entidades existen, procesamos la colisión
+            if (entityA && entityB) {
+                // Calculamos la fuerza del impacto
+                const impulseForce = impulse.normalImpulses[0];
+                
+                // Solo procesamos impactos significativos (> 5)
+                if (impulseForce > 5) {
+                    // Llamamos a game.handleCollision con los datos
+                    if (typeof game !== "undefined" && game.handleCollision) {
+                        // Obtenemos el punto de contacto
+                        const worldManifold = new Box2D.Collision.b2WorldManifold();
+                        contact.GetWorldManifold(worldManifold);
+                        const contactPoint = worldManifold.m_points[0];
+                        
+                        game.handleCollision(entityA, entityB, impulseForce, contactPoint);
+                    }
+                }
+            }
+        };
+        
+        // Asignamos el listener al mundo
+        this.world.SetContactListener(listener);
+        this.contactListener = listener;
     },
 
     /*
@@ -40,7 +88,6 @@ const physics = {
       Toma una de nuestras 'entidades' y le AÑADE un cuerpo físico.
     */
     createBody: function(entidad) {
-        
         // 1. Definición del Cuerpo (BodyDef)
         //    Define dónde estará el cuerpo y si se puede mover.
         const bodyDef = new b2BodyDef();
@@ -84,9 +131,19 @@ const physics = {
         //    Añadimos el cuerpo al mundo y guardamos una referencia.
         const body = this.world.CreateBody(bodyDef);
         body.CreateFixture(fixtureDef);
-
+        
+        // ✅ NUEVO: Adjuntamos la entidad al cuerpo usando SetUserData
+        // Esto permite que el Contact Listener acceda a nuestra entidad
+        body.SetUserData(entidad);
+        
         // CORRECCIÓN: devolver el body para que game.js pueda asignarlo
         return body;
+    },
+
+    removeBody: function(body) {
+        if (body && this.world) {
+            this.world.DestroyBody(body);
+        }
     },
 
     /*

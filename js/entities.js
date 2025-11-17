@@ -12,7 +12,7 @@ const entities = {
         "heroBird": {
             type: "hero", // Tipo para lógica
             radius: 15, // Radio en píxeles para la física
-            health: 100, // Vida
+            health: 500, // ✅ CAMBIAR
             imageName: "hero.png" // (Aún no existe, lo cargaremos luego)
         },
 
@@ -20,7 +20,7 @@ const entities = {
         "enemyPig": {
             type: "villain",
             radius: 20,
-            health: 50,
+            health: 40, // ✅ CAMBIAR
             points: 100, // Puntos que da al ser destruido
             imageName: "enemy.png" // (Aún no existe)
         },
@@ -30,7 +30,8 @@ const entities = {
             type: "block",
             width: 40, // Ancho y alto para la física
             height: 20,
-            health: 30, // Los bloques también tienen vida
+            health: 20, // ✅ CAMBIAR
+            points: 50, // ✅ NUEVO: Puntos por destruir bloques
             imageName: "wood.png" // (Aún no existe)
         },
         
