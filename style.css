@@ -1,0 +1,72 @@
+/* Estilo básico para que el juego ocupe toda la pantalla sin márgenes */
+body {
+    background: #000; /* Fondo negro */
+    color: #fff; /* Texto blanco */
+    margin: 0;
+    padding: 0;
+    overflow: hidden; /* Evita barras de scroll */
+}
+
+/* El contenedor principal del juego.
+  Lo centramos en la pantalla y le damos un tamaño fijo.
+  'position: relative' es VITAL. Actúa como el "ancla" 
+  para todas las capas 'gamelayer' que están dentro de él.
+*/
+#gamecontainer {
+    width: 640px;
+    height: 480px;
+    position: relative;
+    border: 1px solid #fff; /* Borde blanco para verlo */
+
+    /* Truco para centrar el juego perfectamente en la pantalla */
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    position: absolute;
+}
+
+/* ¡LA REGLA MÁS IMPORTANTE!
+  Esto controla todas nuestras "pantallas" (menú, juego, carga).
+*/
+.gamelayer {
+    /* 'position: absolute' hace que todas las capas se apilen
+      una encima de la otra en la misma posición (0,0)
+      dentro de su 'gamecontainer'.
+    */
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+
+    /* Por defecto, TODAS las capas están ocultas.
+      Usaremos JavaScript para mostrar solo la que queremos.
+    */
+    display: none;
+
+    /* Centramos el texto de las capas (como el menú) */
+    text-align: center;
+}
+
+/* Estilos específicos para el canvas del juego */
+#gamecanvas {
+    /* El canvas no necesita centrar texto */
+    text-align: left;
+}
+
+/* Estilos para el HUD (marcador) */
+#scorescreen {
+    /* Lo ponemos semitransparente para que se vea el juego detrás */
+    background: rgba(0, 0, 0, 0.3);
+    height: 40px; /* Solo ocupa la parte de arriba */
+}
+
+/* Estilos para el menú */
+#gamestartscreen h1 {
+    margin-top: 100px;
+    font-size: 40px;
+}
+#gamestartscreen button {
+    font-size: 24px;
+    padding: 10px 20px;
+}
