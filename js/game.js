@@ -3,99 +3,64 @@
   El "cerebro" principal que controla el flujo del juego.
 */
 const game = {
-    
-    // El "pincel" para dibujar en el canvas.
     context: null,
-    
-    // Función de INICIO. Se llama una sola vez.
+    lastTick: 0,
+    entities: [],
+
+    // --- Función de INICIO (init) ---
     init: function() {
-        // 1. Busca el elemento <canvas> en el HTML
         const canvas = document.getElementById("maincanvas");
-        
-        // 2. Obtiene el "contexto 2D" (el "pincel")
         this.context = canvas.getContext("2d");
-        
-        // 3. Inicializamos el cargador (para detectar formato de audio).
-        // (Esto viene de loader.js)
-        loader.init();
 
-        // 4. ¡NUEVO! Inicializamos el mundo de física (crea la gravedad)
-        // (Esto viene de physics.js)
-        physics.init();
+        // Inicializar módulos
+        if (typeof loader !== "undefined" && loader.init) loader.init();
+        if (typeof physics !== "undefined" && physics.init) physics.init();
 
-        // 5. Oculta todas las pantallas
+        // Mostrar SOLO el menú al inicio
         this.hideScreens();
-        
-        // 6. Muestra SOLO la pantalla del menú principal
         this.showScreen("gamestartscreen");
 
-        // 7. Configura el botón "Jugar"
+        // Listener del botón "Jugar"
         const playButton = document.getElementById("playbutton");
-        
-        playButton.addEventListener("click", function() {
-            // 1. Oculta el menú y muestra la pantalla de carga
-            game.hideScreens();
-            game.showScreen("loadingscreen");
-            
-            // 2. Define QUÉ HACER cuando el cargador termine.
-            //    Esta es una función "callback".
-            loader.onload = function() {
-                // Cuando todo esté cargado:
-                
-                // a. Carga las entidades del nivel en el juego
-                //    (Usa el objeto 'levels' y 'entities')
-                game.loadLevel(levels.current); 
-                
-                // b. Muestra el canvas del juego y el HUD
-                game.hideScreens(); // Oculta "loadingscreen"
-                game.showScreen("gamecanvas");
-                game.showScreen("scorescreen");
-                
-                // c. (En el Paso 5) Inicia el bucle principal del juego
-                // game.startGameLoop(); 
-            };
+        if (playButton) {
+            playButton.addEventListener("click", function() {
+                game.hideScreens();
+                game.showScreen("loadingscreen");
 
-            // 3. Obtenemos los recursos REQUERIDOS del nivel actual
-            //    (Usa el objeto 'levels')
-            let currentLevel = levels.data[levels.current];
-            let assets = currentLevel.requiredAssets;
-            
-            // 4. Le decimos al cargador qué cargar
-            //    (Usa el objeto 'loader')
-            
-            // Cargamos las imágenes
-            assets.images.forEach(imgName => {
-                // (Por ahora fallará, no tenemos la carpeta /assets/)
-                loader.loadImage("assets/images/" + imgName);
-            });
-            
-            // Cargamos los sonidos
-            assets.sounds.forEach(soundName => {
-                // Quitamos la extensión (ej: "music.ogg" -> "music")
-                // El cargador ('loader') añade la extensión correcta.
-                loader.loadSound("assets/audio/" + soundName.split('.')[0]); 
-            });
+                // Configurar callback del loader
+                loader.onload = function() {
+                    game.showScreen("gamecanvas");
+                    game.showScreen("scorescreen");
+                    game.loadLevel(0);
+                    game.startGameLoop();
+                };
 
-            // Si el nivel no tiene NADA que cargar (totalCount es 0),
-            // ejecutamos 'onload' manualmente para no quedarnos atascados.
-            if (loader.totalCount === 0) {
-                loader.onload();
-            }
-        });
+                // Encolar assets del nivel 0
+                const level = levels.data[0];
+                if (level && level.requiredAssets) {
+                    if (Array.isArray(level.requiredAssets.images)) {
+                        level.requiredAssets.images.forEach(img => {
+                            loader.loadImage("assets/images/" + img);
+                        });
+                    }
+                    if (Array.isArray(level.requiredAssets.sounds)) {
+                        level.requiredAssets.sounds.forEach(snd => {
+                            loader.loadSound("assets/audio/" + snd);
+                        });
+                    }
+                }
+            });
+        }
     },
 
-    // --- FUNCIONES DE AYUDA PARA MANEJAR PANTALLAS ---
-
-    // Oculta TODAS las capas que tengan la clase 'gamelayer'
+    // --- Manejadores de Pantallas (Sin cambios) ---
     hideScreens: function() {
         const screens = document.getElementsByClassName("gamelayer");
         for (let i = screens.length - 1; i >= 0; i--) {
-            const screen = screens[i];
-            screen.style.display = "none";
+            screens[i].style.display = "none";
         }
     },
     
-    // Muestra UNA capa específica, buscando por su 'id'
     showScreen: function(screenId) {
         const screen = document.getElementById(screenId);
         if (screen) {
@@ -103,33 +68,114 @@ const game = {
         }
     },
 
-    // --- FUNCIÓN DEL PASO 3 (Sin cambios) ---
+    // --- Carga del Nivel (Sin cambios) ---
+    loadLevel: function(levelIndex) {
+        const level = levels.data[levelIndex];
+        if (!level) {
+            console.warn("Nivel no encontrado:", levelIndex);
+            return;
+        }
+
+        this.entities = [];
+        console.log("Cargando nivel", levelIndex, "con", level.entities.length, "entidades");
+
+        level.entities.forEach(entInfo => {
+            const ent = entities.create(entInfo);
+            if (ent) {
+                // CORRECCIÓN: physics.createBody ahora DEVUELVE el body
+                ent.body = physics.createBody(ent);
+                this.entities.push(ent);
+                console.log("Entidad creada:", ent.nombre || ent.type, "en", ent.x, ent.y);
+            }
+        });
+    },
+
+    // --- FUNCIONES DEL GAME LOOP (LA SECCIÓN CORREGIDA) ---
+    // Estas funciones AHORA están al nivel correcto,
+    // como propiedades directas del objeto 'game'.
     
     /*
-      loadLevel(levelData): 
-      Toma los datos del nivel y crea todas las entidades.
+      startGameLoop():
+      Inicia el bule de juego. Se llama UNA VEZ.
     */
-    loadLevel: function(levelIndex) {
-        // Obtiene los datos del nivel (del archivo levels.js)
-        let level = levels.data[levelIndex];
+    startGameLoop: function() {
+        this.lastTick = Date.now();
+        this.gameLoop();
+    },
 
-        // Recorre la lista 'entities' del nivel
-        level.entities.forEach(entidadInfo => {
-            
-            // Llama a la función 'create' (del archivo entities.js)
-            let entidad = entities.create(entidadInfo);
-            
-            // (Más adelante, guardaremos esta 'entidad' en una lista
-            //  y la dibujaremos en el bucle del juego)
+    /*
+      gameLoop():
+      Esta función es el "corazón" que se ejecuta 60 veces por segundo.
+    */
+    gameLoop: function() {
+        const now = Date.now();
+        const deltaTime = (now - game.lastTick) / 1000;
+        game.lastTick = now;
+
+        game.update(deltaTime);
+        game.draw();
+
+        requestAnimationFrame(game.gameLoop);
+    },
+    
+    /*
+      update(deltaTime):
+      Mueve toda la lógica del juego un paso adelante.
+    */
+    update: function(deltaTime) {
+        if (typeof physics !== "undefined" && physics.step) {
+            physics.step(deltaTime);
+        }
+    },
+    
+    /*
+      draw():
+      Dibuja todo el juego en el canvas.
+    */
+    draw: function() {
+        const ctx = this.context;
+        ctx.fillStyle = "#000";
+        ctx.fillRect(0, 0, 640, 480);
+
+        this.entities.forEach(ent => {
+            this.drawEntity(ent);
         });
+    },
 
-        // (En el Paso 5) Dibujaremos el fondo y los objetos
+    /*
+      drawEntity(entidad):
+      Dibuja UNA entidad en el canvas.
+    */
+    drawEntity: function(ent) {
+        if (!ent.body) return;
+
+        const pos = ent.body.GetPosition();
+        const x = pos.x * physics.scale;
+        const y = pos.y * physics.scale;
+        const ctx = this.context;
+
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(ent.body.GetAngle());
+
+        if (ent.radius) {
+            ctx.beginPath();
+            ctx.arc(0, 0, ent.radius, 0, Math.PI * 2);
+            ctx.fillStyle = (ent.type === "hero") ? "#00f" : "#f00";
+            ctx.fill();
+        } else if (ent.width && ent.height) {
+            const hw = ent.width / 2;
+            const hh = ent.height / 2;
+            ctx.fillStyle = (ent.type === "static") ? "#0f0" : "#a52a2a";
+            ctx.fillRect(-hw, -hh, ent.width, ent.height);
+        }
+
+        ctx.restore();
     }
 };
 
 /*
   Iniciador del juego.
-  Espera a que toda la página HTML esté cargada.
 */
 window.addEventListener("load", function() {
     game.init();

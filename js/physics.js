@@ -85,10 +85,8 @@ const physics = {
         const body = this.world.CreateBody(bodyDef);
         body.CreateFixture(fixtureDef);
 
-        // 5. Guardar la referencia
-        //    Guardamos el cuerpo de Box2D DENTRO de nuestro objeto entidad.
-        //    Así, 'entidad.body' nos dará acceso a su posición, velocidad, etc.
-        entidad.body = body;
+        // CORRECCIÓN: devolver el body para que game.js pueda asignarlo
+        return body;
     },
 
     /*

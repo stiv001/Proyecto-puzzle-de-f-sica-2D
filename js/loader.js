@@ -3,7 +3,6 @@
   Este objeto se encargará de cargar todas nuestras imágenes y sonidos.
 */
 const loader = {
-    
     // -- Propiedades del Cargador --
     
     loaded: true, // true si todos los recursos están cargados.
@@ -14,99 +13,89 @@ const loader = {
 
     // -- Métodos (Funciones) del Cargador --
 
-    /*
-      init(): Detecta qué formato de audio (MP3 u OGG) prefiere el navegador.
-    */
     init: function() {
         const audio = new Audio();
-        let mp3Support = audio.canPlayType("audio/mpeg");
-        let oggSupport = audio.canPlayType("audio/ogg; codecs=\"vorbis\"");
-
-        if (oggSupport) {
-            this.soundFileExtn = ".ogg";
-        } else if (mp3Support) {
-            this.soundFileExtn = ".mp3";
-        } else {
-            this.soundFileExtn = undefined;
-        }
+        const mp3 = audio.canPlayType("audio/mpeg");
+        const ogg = audio.canPlayType("audio/ogg; codecs=\"vorbis\"");
+        this.soundFileExtn = ogg ? ".ogg" : (mp3 ? ".mp3" : undefined);
     },
 
-    /*
-      loadImage(url): Le das la ruta de una imagen y la pone en la cola de carga.
-    */
     loadImage: function(url) {
-        this.totalCount++; // Sumamos 1 al total de cosas por cargar.
-        this.loaded = false; // Marcamos que (ahora) estamos cargando algo.
-        
-        // Mostramos la pantalla de carga que hicimos en el Paso 1.
-        game.showScreen("loadingscreen");
+        this.totalCount++;
+        this.loaded = false;
+        try { game.showScreen("loadingscreen"); } catch (e) {}
+        this.updateMessage();
 
-        const image = new Image();
-        
-        // Le decimos al navegador: "Cuando esta imagen termine de cargarse ('load'),
-        // llama a la función 'itemLoaded'".
-        image.addEventListener("load", loader.itemLoaded, false);
-        
-        // Ahora sí, le decimos a la imagen que comience a descargarse.
-        image.src = url;
-        
-        return image; // Devolvemos el objeto de imagen.
+        const img = new Image();
+        img.addEventListener("load", loader.itemLoaded, false);
+        img.addEventListener("error", loader.itemLoaded, false);
+        img.src = url;
+        return img;
     },
 
-    /*
-      loadSound(url): Idéntico a 'loadImage' pero para sonidos.
-    */
     loadSound: function(url) {
         this.totalCount++;
         this.loaded = false;
-        game.showScreen("loadingscreen");
+        try { game.showScreen("loadingscreen"); } catch (e) {}
+        this.updateMessage();
 
         const audio = new Audio();
-
-        // Para los sonidos, usamos 'canplaythrough'.
+        let src = url;
+        if (!/\.(ogg|mp3)$/i.test(url) && this.soundFileExtn) {
+            src = url + this.soundFileExtn;
+        }
         audio.addEventListener("canplaythrough", loader.itemLoaded, false);
-
-        // Le decimos que comience a descargarse (añadiendo la extensión correcta).
-        audio.src = url + this.soundFileExtn;
-        
+        audio.addEventListener("error", loader.itemLoaded, false);
+        audio.src = src;
+        if (audio.load) audio.load();
         return audio;
     },
 
     /*
-      itemLoaded(ev): Se llama CADA VEZ que UN recurso termina de cargarse.
+      itemLoaded(ev): Se llama CADA VEZ que UN recurso termina (con éxito O error).
     */
     itemLoaded: function(ev) {
         // Sumamos 1 a nuestro contador de cosas cargadas.
         loader.loadedCount++;
+        loader.updateMessage();
 
-        // Actualizamos el mensaje en la pantalla de carga.
-        const loadingMessage = document.getElementById("loadingmessage");
-        loadingMessage.innerHTML = "Cargando " + loader.loadedCount + " de " + loader.totalCount + "...";
+        try {
+            if (ev && ev.target) {
+                const tag = (ev.target.tagName || "").toUpperCase();
+                if (tag === "IMG") {
+                    ev.target.removeEventListener("load", loader.itemLoaded, false);
+                    ev.target.removeEventListener("error", loader.itemLoaded, false);
+                } else if (tag === "AUDIO") {
+                    ev.target.removeEventListener("canplaythrough", loader.itemLoaded, false);
+                    ev.target.removeEventListener("error", loader.itemLoaded, false);
+                }
+            }
+        } catch (e) {}
 
-        // IMPORTANTE: Removemos el "oyente" del evento para no llamarlo dos veces.
-        if (ev.target.tagName === "IMG") {
-            ev.target.removeEventListener("load", loader.itemLoaded, false);
-        } else if (ev.target.tagName === "AUDIO") {
-            ev.target.removeEventListener("canplaythrough", loader.itemLoaded, false);
-        }
-
-        // Comparamos: ¿Ya cargamos todo lo que pedimos?
+        // Comparamos: ¿Ya cargamos (o fallamos) todo lo que pedimos?
         if (loader.loadedCount === loader.totalCount) {
-            // ¡SÍ! Todo está cargado.
+            // ¡SÍ! Todo está "procesado".
             
-            // Reseteamos los contadores para la próxima vez (ej. otro nivel).
             loader.loaded = true;
             loader.loadedCount = 0;
             loader.totalCount = 0;
 
             // Ocultamos la pantalla de carga.
-            game.hideScreens(); // (Tu corrección)
-
+            try { game.hideScreens(); } catch (e) {}
             // Y ahora, llamamos a la función 'onload' que 'game.js' nos pasó.
+            // (Esta función es la que inicia el game loop).
             if (loader.onload) {
-                loader.onload();
-                loader.onload = null; // La limpiamos para que no se llame de nuevo.
+                const fn = loader.onload;
+                loader.onload = null;
+                fn();
             }
+        }
+    },
+
+    updateMessage: function() {
+        const msg = document.getElementById("loadingmessage");
+        if (msg) {
+            msg.innerHTML = "Cargando " + this.loadedCount + " de " + this.totalCount + "...";
         }
     }
 };

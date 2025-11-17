@@ -68,6 +68,23 @@ const levels = {
                 images: ["hero.png", "enemy.png", "ground.png", "background.png"],
                 sounds: ["music.ogg", "launch.ogg", "impact.ogg"]
             }
+        },
+
+        // --- Nivel 4 (Índice 3) ---
+        {
+            foreground: "background.png",
+            requiredAssets: {
+                images: ["hero.png", "enemy.png", "wood.png", "ground.png", "background.png"],
+                sounds: ["music.ogg", "launch.ogg", "impact.ogg"]
+            },
+            entities: [
+                { nombre: "ground", x: 320, y: 440 },
+                { nombre: "heroBird", x: 100, y: 100 },
+                { nombre: "enemyPig", x: 500, y: 100 },
+                { nombre: "woodBlock", x: 450, y: 350 },
+                { nombre: "woodBlock", x: 500, y: 350 },
+                { nombre: "woodBlock", x: 550, y: 350 }
+            ]
         }
     ]
 };

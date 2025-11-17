@@ -47,43 +47,16 @@ const entities = {
       Función 'create(entidadInfo)'
       ACTUALIZADA para llamar al motor de física.
     */
-    create: function(entidadInfo) {
-        
-        // 1. Obtiene la definición base de nuestro catálogo
-        let nombre = entidadInfo.nombre; // ej: "heroBird"
-        let definicion = entities.definitions[nombre];
-        
-        if (!definicion) {
-            console.error("No se encontró definición para:", nombre);
+    create: function(entInfo) {
+        const def = this.definitions[entInfo.nombre];
+        if (!def) {
+            console.warn("Definición no encontrada:", entInfo.nombre);
             return null;
         }
-
-        // 2. Crea un nuevo objeto 'entidad' combinando ambas informaciones
-        let entidad = {
-            // Propiedades del nivel (ej: { nombre: "heroBird", x: 100, y: 400 })
-            ...entidadInfo,
-            
-            // Propiedades del catálogo (ej: { radius: 15, health: 100, ... })
-            radius: definicion.radius,
-            health: definicion.health,
-            points: definicion.points,
-            width: definicion.width,
-            height: definicion.height,
-            imageName: definicion.imageName,
-            
-            // Estado inicial del juego
-            isAlive: true,
-            
-            // ¡NUEVO! Un espacio para guardar el cuerpo físico
-            body: null 
-        };
-
-        // 3. ¡NUEVO! Llamamos a la física para crear el cuerpo
-        //    Esto añade el cuerpo al 'physics.world' y
-        //    guarda la referencia en 'entidad.body'.
-        physics.createBody(entidad);
-
-        console.log("Entidad física creada:", entidad.nombre);
-        return entidad;
+        const ent = Object.assign({}, def, entInfo);
+        ent.x = entInfo.x || 0;
+        ent.y = entInfo.y || 0;
+        console.log("entities.create ->", ent.nombre, "type:", ent.type, "pos:", ent.x, ent.y);
+        return ent;
     }
 };
