@@ -22,6 +22,9 @@ const game = {
     currentLevel: 0,
     heroesRemaining: 3,
     highScore: 0,
+    // Nuevo: temporizador del nivel
+    levelTimeRemaining: 0,
+    levelTimeLimit: 0,
 
     // Inicialización del juego
     init: function() {
@@ -135,6 +138,11 @@ const game = {
         this.heroesRemaining = 3;
         this.updateHUD();
 
+        // Nuevo: configurar tiempo por nivel
+        this.levelTimeLimit = this.getLevelTime(levelIndex);
+        this.levelTimeRemaining = this.levelTimeLimit;
+        this.updateTimeDisplay();
+
         console.log("Cargando nivel", levelIndex, "con", level.entities.length, "entidades");
 
         // Crear entidades del nivel
@@ -150,6 +158,23 @@ const game = {
                 }
             }
         });
+    },
+
+    // Nuevo: tiempo por nivel (0→15s, 1→20s, 2→25s)
+    getLevelTime: function(levelIndex) {
+        if (levelIndex === 0) return 15;
+        if (levelIndex === 1) return 20;
+        if (levelIndex === 2) return 25;
+        return 20; // valor por defecto
+    },
+
+    // Nuevo: actualizar texto del temporizador en HUD
+    updateTimeDisplay: function() {
+        const timeEl = document.getElementById("time");
+        if (timeEl) {
+            const secs = Math.max(0, Math.ceil(this.levelTimeRemaining));
+            timeEl.innerHTML = secs;
+        }
     },
 
     // Sistema de colisiones
@@ -379,6 +404,12 @@ const game = {
             physics.step(deltaTime);
         }
 
+        // Nuevo: descontar tiempo mientras el nivel está activo
+        if (this.state !== "lost" && this.state !== "won") {
+            this.levelTimeRemaining = Math.max(0, this.levelTimeRemaining - deltaTime);
+            this.updateTimeDisplay();
+        }
+
         // Efecto de sacudida de cámara
         if (this.shakeIntensity > 0.1) {
             this.shakeIntensity *= this.shakeDecay;
@@ -523,6 +554,15 @@ const game = {
             this.state = "won";
             this.saveHighScore();
             this.showVictoryScreen();
+            return;
+        }
+
+        // Nuevo: derrota por tiempo agotado con enemigos aún vivos
+        if (this.levelTimeRemaining <= 0 && enemiesAlive > 0 && this.state !== "lost" && this.state !== "won") {
+            this.state = "lost";
+            this.saveHighScore();
+            this.showLoseScreen();
+            return;
         }
         
         // Derrota: sin héroes y enemigos vivos
@@ -568,6 +608,9 @@ const game = {
             ).length;
             enemiesElement.innerHTML = count;
         }
+
+        // Nuevo: asegurar sincronización del tiempo al refrescar HUD
+        this.updateTimeDisplay();
     },
 
     // Renderizado del juego
@@ -689,16 +732,24 @@ const game = {
     drawEntity: function(ent) {
         if (!ent.body) return;
 
+        if (!ent.body) return;
         const pos = ent.body.GetPosition();
         const x = pos.x * physics.scale;
         const y = pos.y * physics.scale;
         const ctx = this.context;
-
         ctx.save();
         ctx.translate(x, y);
         ctx.rotate(ent.body.GetAngle());
-
         if (ent.nombre === "wall") {
+            if (ent.width && ent.height) {
+                const hw = ent.width / 2;
+                const hh = ent.height / 2;
+                ctx.fillStyle = "rgba(255,0,0,0.03)"; // más imperceptible
+                ctx.fillRect(-hw, -hh, ent.width, ent.height);
+                ctx.strokeStyle = "rgba(255,0,0,0.08)";
+                ctx.lineWidth = 1;
+                ctx.strokeRect(-hw, -hh, ent.width, ent.height);
+            }
             ctx.restore();
             return;
         }

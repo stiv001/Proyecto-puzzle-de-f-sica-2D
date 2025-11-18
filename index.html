@@ -4,7 +4,7 @@
 <head>
     <!-- Configuración básica -->
     <meta charset="UTF-8">
-    <title>Puzzle de Física 2D - Proyecto Bimestre 1</title>
+    <title>Kinetik - Proyecto Bimestre 1</title>
     <meta name="viewport"
         content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width">
     <link rel="stylesheet" href="style.css">
@@ -20,7 +20,7 @@
 
         <!-- Menú principal del juego -->
         <div id="gamestartscreen" class="gamelayer">
-            <h1>Puzzle de Física 2D</h1>
+            <h1>Kinetik</h1>
             <p>Destruye todos los enemigos y bloques</p>
             <button id="playbutton">Jugar</button>
             <div class="highscore-display">
@@ -38,6 +38,8 @@
             <div class="score-container">
                 <div>Puntuación: <span id="score">0</span></div>
                 <div>Nivel: <span id="level">1</span></div>
+                <!-- Nuevo: temporizador por nivel -->
+                <div>Tiempo: <span id="time">0</span>s</div>
                 <div>Héroes: <span id="heroes">3</span></div>
                 <div>Enemigos: <span id="enemies">0</span></div>
             </div>
@@ -45,14 +47,13 @@
             <button id="mutebutton" class="control-button">🔊 Sonido</button>
         </div>
 
-        <!-- Pantalla de victoria -->
+        <!-- Pantallas de fin de juego (sin cambios de nombre) -->
         <div id="winscreen" class="gamelayer">
             <h1>¡Nivel <span id="winlevel">1</span> Completado! 🎉</h1>
             <p>Puntuación: <span id="winscore">0</span></p>
             <button id="nextlevelbutton">Siguiente Nivel</button>
         </div>
 
-        <!-- Pantalla de game over -->
         <div id="losescreen" class="gamelayer">
             <h1>Game Over 💀</h1>
             <p>Puntuación Final: <span id="losescore">0</span></p>
